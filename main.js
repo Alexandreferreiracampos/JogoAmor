@@ -90,22 +90,24 @@ function preload() {
 }
 
 function create() {
-  // Atalhos de Desenvolvimento
-  this.input.keyboard.on('keydown-ONE', () => pularParaConversa.call(this));
-  this.input.keyboard.on('keydown-TWO', () => iniciarMissaoSala.call(this));
+  // 1. Atalhos de Desenvolvimento
+  this.input.keyboard.on('keydown-ONE', () => iniciarMissaoSala.call(this));
+  this.input.keyboard.on('keydown-TWO', () => pularParaConversa.call(this));
   this.input.keyboard.on('keydown-THREE', () => iniciarMissaoPizzaria.call(this));
-
-  // Configuração do Mapa
+  this.input.keyboard.on('keydown-FOUR', () => pularParaCasa.call(this));
+  
+  // 2. Configuração do Mapa (APENAS UMA VEZ)
   const map = this.make.tilemap({ key: 'mapa' });
   const tileset = map.addTilesetImage(map.tilesets[0].name, 'tiles');
   const layer = map.createLayer(0, tileset, 0, 0);
   layer.setCollisionByProperty({ collides: true });
 
+  // 4. Configurações de Mundo e Câmera
   this.physics.world.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
   this.cameras.main.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
   this.cameras.main.setBackgroundColor('#84C669');
 
-  // Inicialização dos Jogadores
+  // 5. Inicialização dos Jogadores
   this.playerEla = this.physics.add.sprite(2342, 682, 'playerEla', FRAMES.ela.idle);
   this.playerEle = this.physics.add.sprite(2382, 682, 'playerEle', FRAMES.ele.idle);
 
@@ -117,27 +119,24 @@ function create() {
 
   criarAnimacoes(this);
 
-  // Controles e Câmera
+  // 6. Controles e Câmera
   cursors = this.input.keyboard.createCursorKeys();
   this.cameras.main.startFollow(this.playerEla);
 
-  // Configuração de Zonas e Colisões de Missão
+  // 7. Configuração de Zonas e Colisões de Missão
   configurarZonas.call(this);
 
-  // HUD - Coração
+  // 8. HUD - Coração
   this.hud = {};
   this.hud.x = 20;
   this.hud.y = 20;
   this.hud.width = 200;
   this.hud.height = 20;
-
   this.hud.bg = this.add.graphics();
   this.hud.fill = this.add.graphics();
-
   this.hud.bg.setScrollFactor(0);
   this.hud.fill.setScrollFactor(0);
 
-  // texto
   this.hud.text = this.add.text(20, 45, '❤️ Amor', {
     fontFamily: 'monospace',
     fontSize: '22px',
@@ -146,47 +145,71 @@ function create() {
   });
   this.hud.text.setScrollFactor(0);
 
-  // Inicialização de UI
+  // 9. Inicialização de UI
   atualizarHud.call(this);
   criarDialogo.call(this);
 }
 
+
 function update() {
   if (gameState.dialogoAtivo) return;
 
-  const player = getPersonagemAtivo(this);
-  const tipo = gameState.personagemAtual;
+  // 1. Identificar quem é quem (usando as funções que já existem no seu código)
+  const player = getPersonagemAtivo(this); 
+  const npc = getNpc(this); // Certifique-se que esta função existe no final do seu arquivo
+  
+  // 2. Definir o tipo do NPC para as animações
+  const tipoNpc = gameState.personagemAtual === 'ela' ? 'ele' : 'ela';
   const speed = 120;
 
-  // Lógica de Missão Automática
-  if (gameState.missaoAtual === 'irPizzaria' && gameState.subMissao === 'elaSegueEle') {
-    moverEleParaPizzaria.call(this);
+  // 3. Lógica de Seguimento
+  const missoesDeSeguir = ['levarParaCasa', 'irPizzaria', 'elaSegueEle'];
+  
+  // Verificamos se o npc existe antes de tentar movê-lo para evitar erros
+  if (npc && (missoesDeSeguir.includes(gameState.missaoAtual) || missoesDeSeguir.includes(gameState.subMissao))) {
+    const distancia = Phaser.Math.Distance.Between(npc.x, npc.y, player.x, player.y);
+
+    if (distancia > 30) {
+      this.physics.moveToObject(npc, player, 110);
+      
+      const dx = player.x - npc.x;
+      const dy = player.y - npc.y;
+      
+      if (Math.abs(dx) > Math.abs(dy)) {
+        npc.anims.play(`${tipoNpc}-${dx > 0 ? 'right' : 'left'}`, true);
+      } else {
+        npc.anims.play(`${tipoNpc}-${dy > 0 ? 'down' : 'up'}`, true);
+      }
+    } else {
+      npc.setVelocity(0);
+      npc.anims.stop();
+    }
   }
 
-  // Movimentação do Jogador Ativo
+  // 4. Movimentação do Jogador Ativo (Seu código original de setas)
   player.setVelocity(0);
 
   if (cursors.left.isDown) {
     player.setVelocityX(-speed);
-    player.anims.play(`${tipo}-left`, true);
+    player.anims.play(`${gameState.personagemAtual}-left`, true);
     player.direction = 'left';
   } else if (cursors.right.isDown) {
     player.setVelocityX(speed);
-    player.anims.play(`${tipo}-right`, true);
+    player.anims.play(`${gameState.personagemAtual}-right`, true);
     player.direction = 'right';
   } else if (cursors.up.isDown) {
     player.setVelocityY(-speed);
-    player.anims.play(`${tipo}-up`, true);
+    player.anims.play(`${gameState.personagemAtual}-up`, true);
     player.direction = 'up';
   } else if (cursors.down.isDown) {
     player.setVelocityY(speed);
-    player.anims.play(`${tipo}-down`, true);
+    player.anims.play(`${gameState.personagemAtual}-down`, true);
     player.direction = 'down';
   } else {
     player.anims.stop();
   }
 
-  // Ajuste de Profundidade (Y-sorting)
+  // 5. Ajuste de Profundidade (Y-sorting)
   this.playerEla.setDepth(this.playerEla.y);
   this.playerEle.setDepth(this.playerEle.y);
 }
@@ -323,7 +346,7 @@ function configurarZonas() {
   this.physics.world.enable(this.zonaCasa);
   this.zonaCasa.body.setAllowGravity(false);
 
-  this.physics.add.overlap(this.playerEla, this.zonaCasa, () => {
+  this.physics.add.overlap(this.playerEle, this.zonaCasa, () => {
     if (gameState.missaoAtual === 'levarParaCasa' && !gameState.dialogoAtivo) {
       chegouNaCasa.call(this);
     }
@@ -343,8 +366,7 @@ function trocarParaEle() {
   gameState.personagemAtual = 'ele';
   gameState.missaoAtual = 'conhecer';
   this.playerEla.body.moves = false;
-  this.playerEla.setVelocity(0);
-  this.playerEla.anims.stop();
+  pararPersonagens.call(this);
   this.cameras.main.startFollow(this.playerEle);
   console.log('Ela chegou. Agora vá conhecê-la.');
 }
@@ -352,7 +374,6 @@ function trocarParaEle() {
 function iniciarEncontro() {
   gameState.encontroAtivado = true;
   gameState.conheceu = true;
-  pararPersonagens.call(this);
 
   olharUmParaOutro.call(this, getPersonagemAtivo(this), getNpc(this));
 
@@ -484,8 +505,8 @@ function iniciarConvitePizza() {
 function iniciarMissaoPizzaria() {
   gameState.missaoAtual = 'irPizzaria';
   gameState.subMissao = 'elaSegueEle';
-  gameState.personagemAtual = 'ela';
-  this.cameras.main.startFollow(this.playerEla);
+  gameState.personagemAtual = 'ele';
+  this.cameras.main.startFollow(this.playerEle);
   this.playerEle.body.moves = true;
   console.log('Missão: Siga Alexandre até a pizzaria');
 }
@@ -493,6 +514,10 @@ function iniciarMissaoPizzaria() {
 function iniciarDialogoPizza() {
   gameState.subMissao = 'comendoPizza';
   pararPersonagens.call(this);
+
+   this.playerEla.setPosition(2342, 682);
+  this.playerEle.setPosition(2384, 682);
+  
   olharUmParaOutro.call(this, getPersonagemAtivo(this), getNpc(this));
 
   iniciarDialogo.call(this, [
@@ -548,6 +573,9 @@ function iniciarDialogoFinalPizza() {
   forcarDirecao(this.playerEle, 'ele', 'left');
   forcarDirecao(this.playerEla, 'ela', 'right');
 
+  gameState.love += 5;
+  atualizarHud.call(this);
+
   iniciarDialogo.call(this, [
     { nome: 'Alexandre', texto: 'Nossa, a pizza estava muito boa. Nunca tinha vindo aqui.' },
     { nome: 'Ana', texto: 'Boa mesmo! Você é de onde?' },
@@ -568,35 +596,131 @@ function iniciarMissaoCasa() {
   gameState.subMissao = null;
   gameState.personagemAtual = 'ela';
   this.cameras.main.startFollow(this.playerEla);
-  console.log('Missão: Leve Ana em segurança até a casa dela.');
+  
 }
 
+
 function chegouNaCasa() {
-  // Ativamos o diálogo para pausar o overlap e o movimento
   gameState.dialogoAtivo = true;
   pararPersonagens.call(this);
 
+  this.playerEla.setPosition(520, 1850);
+  this.playerEle.setPosition(550, 1850);
+
+
+  forcarDirecao(this.playerEle, 'ele', 'left');
+  forcarDirecao(this.playerEla, 'ela', 'right');
+
+  
   iniciarDialogo.call(this, [
     { nome: 'Ana', texto: 'Obrigada por me trazer em casa, Alexandre. A noite foi ótima!' },
     { nome: 'Alexandre', texto: 'Eu que agradeço, Ana. A gente se vê na escola?' },
     { nome: 'Ana', texto: 'Com certeza! Tchauzinho 😊' }
   ], () => {
-    // Ao final do diálogo, mudamos a missão para liberar o jogo
-    iniciarProximaMissao.call(this);
+    mostrarOpcoesFinal.call(this);
   });
 }
 
-function iniciarProximaMissao() {
-  // Aqui você define o nome da sua próxima missão
-  gameState.missaoAtual = 'novaMissao'; 
-  gameState.subMissao = null;
+function mostrarOpcoesFinal() {
   
-  // Exemplo: Alexandre agora precisa voltar para a fazenda
+  gameState.dialogoAtivo = true;
+
+  gameState.missaoAtual = 'novaMissao'; 
+  pararPersonagens.call(this);
+  forcarDirecao(this.playerEle, 'ele', 'left');
+  forcarDirecao(this.playerEla, 'ela', 'right');
+
+  // 2. ESCONDER A CAIXA DE DIÁLOGO (Adicione estas linhas abaixo)
+  if (this.dialogo) {
+    if (this.dialogo.timer) this.dialogo.timer.remove(); // Para o texto se estiver digitando
+    this.dialogo.bg.setVisible(false);    // Esconde o fundo preto
+    this.dialogo.nome.setVisible(false);  // Esconde o nome
+    this.dialogo.texto.setVisible(false); // Esconde o texto
+    this.dialogo.texto.setText('');       // Limpa o conteúdo do texto
+  }
+
+  // 3. Limpar botões antigos se existirem (prevenção)
+  if (this.botoesOpcoes) {
+    this.botoesOpcoes.forEach(b => { 
+      if(b.bg) b.bg.destroy(); 
+      if(b.txt) b.txt.destroy(); 
+    });
+  }
+  this.botoesOpcoes = [];
+
+  const opcoes = [
+    { texto: 'Pedir o telefone', acao: escolherTelefone },
+    { texto: 'Tentar beijá-la', acao: escolherBeijo },
+    { texto: 'Dar tchau e ir embora', acao: escolherIrEmbora }
+  ];
+
+  const larguraBotao = 400;
+  const alturaBotao = 50;
+  const espacamento = 20;
+  const inicioY = (this.scale.height / 2) - ((opcoes.length * (alturaBotao + espacamento)) / 2);
+
+  opcoes.forEach((opcao, index) => {
+    const x = this.scale.width / 2;
+    const y = inicioY + index * (alturaBotao + espacamento);
+
+    const bg = this.add.rectangle(x, y, larguraBotao, alturaBotao, 0x000000, 0.8)
+      .setInteractive({ useHandCursor: true })
+      .setScrollFactor(0)
+      .setDepth(10000); // Depth bem alto
+
+    const txt = this.add.text(x, y, opcao.texto, {
+      fontSize: '24px',
+      color: '#ffffff'
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(10001);
+
+    bg.on('pointerover', () => bg.setFillStyle(0x444444, 1));
+    bg.on('pointerout', () => bg.setFillStyle(0x000000, 0.8));
+    
+    bg.on('pointerdown', () => {
+      // Destruir botões imediatamente ao clicar
+      this.botoesOpcoes.forEach(b => { b.bg.destroy(); b.txt.destroy(); });
+      this.botoesOpcoes = [];
+      opcao.acao.call(this);
+    });
+
+    this.botoesOpcoes.push({ bg, txt });
+  });
+}
+
+function escolherBeijo() {
+  iniciarDialogo.call(this, [
+    { nome: 'Alexandre', texto: '(Você tenta se aproximar para um beijo)' },
+    { nome: 'Ana', texto: 'Ei, calma lá! rsrs. A gente acabou de se conhecer, Alexandre.' },
+    { nome: 'Ana', texto: 'Quem sabe em um próximo encontro? 😉' }
+  ], () => {
+    this.time.delayedCall(100, () => { mostrarOpcoesFinal.call(this); });
+  });
+}
+
+function escolherIrEmbora() {
+  iniciarDialogo.call(this, [
+    { nome: 'Alexandre', texto: 'Bom, então é isso. Boa noite, Ana!' },
+    { nome: 'Ana', texto: 'Ué, já vai? Você não está esquecendo de me pedir nada não? rsrs' }
+  ], () => {
+    this.time.delayedCall(100, () => { mostrarOpcoesFinal.call(this); });
+  });
+}
+
+function escolherTelefone() {
+  iniciarDialogo.call(this, [
+    { nome: 'Alexandre', texto: 'Ana, eu adorei te conhecer... será que eu poderia anotar seu telefone?' },
+    { nome: 'Ana', texto: 'Claro! Anota aí: 99999-8888. Me manda um "oi" depois, tá?' },
+    { nome: 'Alexandre', texto: 'Pode deixar! Boa noite, Ana.' }
+  ], () => { iniciarProximaMissao.call(this); });
+  gameState.love += 10;
+  atualizarHud.call(this);
+}
+
+function iniciarProximaMissao() {
+  gameState.missaoAtual = 'novaMissao'; 
   gameState.personagemAtual = 'ele';
   this.cameras.main.startFollow(this.playerEle);
-  
   console.log('Missão: Ana entrou em casa. Agora Alexandre deve voltar para a fazenda.');
-  // Adicione aqui as coordenadas ou lógica da próxima etapa
 }
 
 // Atalhos de DEV
@@ -607,6 +731,33 @@ function pularParaConversa() {
   this.cameras.main.startFollow(this.playerEle);
   this.playerEle.setPosition(2900, 520);
   this.playerEla.setPosition(2920, 520);
+}
+
+function pularParaCasa() {
+  console.log("Atalho: Pulando para o final na casa da Ana...");
+  
+  // Configura o estado da missão
+  gameState.missaoAtual = 'levarParaCasa';
+  gameState.subMissao = null;
+  gameState.personagemAtual = 'ela';
+  gameState.dialogoAtivo = false;
+
+  // Posiciona os personagens na frente da casa da Ana
+  // Coordenadas baseadas na zonaCasa (520, 1892)
+  this.playerEla.setPosition(520, 1850);
+  this.playerEle.setPosition(550, 1850);
+
+  // Ajusta a câmera
+  this.cameras.main.startFollow(this.playerEla);
+  
+  // Para qualquer movimento residual
+  //pararPersonagens.call(this);
+  
+  // Força a direção para parecer natural
+  forcarDirecao(this.playerEle, 'ele', 'left');
+  forcarDirecao(this.playerEla, 'ela', 'right');
+
+  console.log("Chegou! Agora basta dar um passo em direção à zona da casa para ativar o diálogo final.");
 }
 
 // --- 6. MOVIMENTAÇÃO E ANIMAÇÕES ---
@@ -651,7 +802,7 @@ function olharUmParaOutro(playerAtivo, outro) {
   const oposta = direcaoOposta[direcao];
   const tipoOutro = outro === this.playerEla ? 'ela' : 'ele';
   outro.anims.play(`${tipoOutro}-${oposta}`, true);
-  outro.anims.stop();
+  pararPersonagens.call(this);
 }
 
 function forcarDirecao(sprite, tipo, direcao) {
