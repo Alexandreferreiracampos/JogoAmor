@@ -66,6 +66,7 @@ const gameState = {
   dialogoAtivo: false,
   conheceu: false,
   love: 0,
+  
   encontroAtivado: false,
   jogoFinalizado: false // Nova flag para evitar loops no fim
 };
@@ -78,6 +79,8 @@ function preload() {
   this.load.image('tiles', 'assets/tiles.png');
   this.load.tilemapTiledJSON('mapa', 'assets/cidade.json');
 
+  this.load.image('marcadorMissao', 'assets/marcador.png');
+
   this.load.spritesheet('playerEla', 'assets/personagem.png', {
     frameWidth: 32,
     frameHeight: 32
@@ -87,6 +90,7 @@ function preload() {
     frameWidth: 32,
     frameHeight: 32
   });
+
 }
 
 function create() {
@@ -148,6 +152,8 @@ function create() {
   // 9. Inicialização de UI
   atualizarHud.call(this);
   criarDialogo.call(this);
+  
+  atualizarMarcadorMissao.call(this);
 }
 
 
@@ -212,6 +218,10 @@ function update() {
   // 5. Ajuste de Profundidade (Y-sorting)
   this.playerEla.setDepth(this.playerEla.y);
   this.playerEle.setDepth(this.playerEle.y);
+
+  console.log(
+  `X: ${Math.floor(player.x)} | Y: ${Math.floor(player.y)}`
+);
 }
 
 // --- 4. SISTEMA DE DIÁLOGOS ---
@@ -305,7 +315,7 @@ function fecharDialogo() {
 
 function configurarZonas() {
   // Zona Escola
-  this.zonaEscola = this.add.zone(2930, 400, 200, 64);
+  this.zonaEscola = this.add.zone(2930, 450, 200, 10);
   this.physics.world.enable(this.zonaEscola);
   this.zonaEscola.body.setAllowGravity(false);
 
@@ -346,11 +356,21 @@ function configurarZonas() {
   this.physics.world.enable(this.zonaCasa);
   this.zonaCasa.body.setAllowGravity(false);
 
+  
   this.physics.add.overlap(this.playerEle, this.zonaCasa, () => {
     if (gameState.missaoAtual === 'levarParaCasa' && !gameState.dialogoAtivo) {
       chegouNaCasa.call(this);
     }
   });
+
+    // Zona porta casa ana
+  this.zonaPortaCasa = this.add.zone(576, 1708, 20, 20);
+  this.physics.world.enable(this.zonaPortaCasa);
+  this.zonaPortaCasa.body.setAllowGravity(false);
+
+  // MARCA NO MAPA
+this.debugZonaCasa = marcarZonaNoMapa(this, this.zonaPortaCasa, 0x00ff00);
+
 
   // Colisões entre Personagens
   this.physics.add.overlap(this.playerEle, this.playerEla, () => {
@@ -362,6 +382,68 @@ function configurarZonas() {
   });
 }
 
+function atualizarMarcadorMissao() {
+  // 1. Limpar marcador antigo
+  if (this.marcadorSprite) {
+    this.marcadorSprite.destroy();
+    this.marcadorSprite = null;
+  }
+
+  // 2. Identificar a zona alvo
+  let zonaAlvo = null;
+  if (gameState.missaoAtual === 'irParaEscola') zonaAlvo = this.zonaEscola;
+  else if (gameState.missaoAtual === 'irParaSala') zonaAlvo = this.zonaSala;
+  else if (gameState.missaoAtual === 'irPizzaria') zonaAlvo = this.zonaPizzaria;
+  else if (gameState.missaoAtual === 'levarParaCasa') zonaAlvo = this.zonaCasa;
+
+  // Se não houver missão ativa ou zona, não cria nada
+  if (!zonaAlvo) return;
+
+  // 3. Criar a sprite do marcador
+  // Posicionamos um pouco acima da zona (y - 40) para parecer que está flutuando sobre o ponto
+  this.marcadorSprite = this.add.sprite(zonaAlvo.x, zonaAlvo.y - 30, 'marcadorMissao');
+  
+  this.marcadorSprite.setDepth(10000); // Garante que fique acima de tudo
+
+  // 4. Efeito de flutuar (sobe e desce)
+  this.tweens.add({
+    targets: this.marcadorSprite,
+    y: zonaAlvo.y -10,
+    duration: 800,
+    yoyo: true,
+    repeat: -1,
+    ease: 'Sine.easeInOut'
+  });
+}
+
+
+function marcarZonaNoMapa(scene, zona, cor = 0xff0000) {
+  const g = scene.add.graphics();
+
+  // contorno
+  g.lineStyle(2, cor, 1);
+  g.strokeRect(
+    zona.x - zona.width / 2,
+    zona.y - zona.height / 2,
+    zona.width,
+    zona.height
+  );
+
+  // preenchimento transparente (opcional)
+  g.fillStyle(cor, 0.2);
+  g.fillRect(
+    zona.x - zona.width / 2,
+    zona.y - zona.height / 2,
+    zona.width,
+    zona.height
+  );
+
+  g.setDepth(5);          // abaixo do HUD
+  g.setScrollFactor(1);   // acompanha o mapa (MUITO IMPORTANTE)
+
+  return g; // caso queira remover depois
+}
+
 function trocarParaEle() {
   gameState.personagemAtual = 'ele';
   gameState.missaoAtual = 'conhecer';
@@ -369,6 +451,7 @@ function trocarParaEle() {
   pararPersonagens.call(this);
   this.cameras.main.startFollow(this.playerEle);
   console.log('Ela chegou. Agora vá conhecê-la.');
+  atualizarMarcadorMissao.call(this);
 }
 
 function iniciarEncontro() {
@@ -407,6 +490,7 @@ function iniciarMissaoSala() {
   gameState.personagemAtual = 'ele';
   this.cameras.main.startFollow(this.playerEle);
   console.log('Missão: Vá para a sala de aula (ELE)');
+  atualizarMarcadorMissao.call(this);
 }
 
 function eleChegouNaSala() {
@@ -423,7 +507,8 @@ function eleChegouNaSala() {
 function ambosNaSala() {
   gameState.subMissao = 'aulaFinalizada';
   pararPersonagens.call(this);
-
+  gameState.missaoAtual = 'null';
+  atualizarMarcadorMissao.call(this);
   this.cameras.main.fadeOut(600, 0, 0, 0);
   this.time.delayedCall(650, () => {
     this.cameras.main.fadeIn(1, 0, 0, 0);
@@ -485,7 +570,7 @@ function finalizarAula() {
 function iniciarConvitePizza() {
   pararPersonagens.call(this);
   olharUmParaOutro.call(this, getPersonagemAtivo(this), getNpc(this));
-
+  
   iniciarDialogo.call(this, [
     { nome: 'Alexandre', texto: 'Oi… aula longa, né?' },
     { nome: 'Ana', texto: 'Sério? Nem achei tão ruim assim.' },
@@ -509,16 +594,21 @@ function iniciarMissaoPizzaria() {
   this.cameras.main.startFollow(this.playerEle);
   this.playerEle.body.moves = true;
   console.log('Missão: Siga Alexandre até a pizzaria');
+  atualizarMarcadorMissao.call(this);
 }
 
 function iniciarDialogoPizza() {
   gameState.subMissao = 'comendoPizza';
+  gameState.missaoAtual = null;
+  atualizarMarcadorMissao.call(this);
   pararPersonagens.call(this);
 
-   this.playerEla.setPosition(2342, 682);
+  this.playerEla.setPosition(2342, 682);
   this.playerEle.setPosition(2384, 682);
-  
-  olharUmParaOutro.call(this, getPersonagemAtivo(this), getNpc(this));
+
+  forcarDirecao(this.playerEle, 'ele', 'left');
+  forcarDirecao(this.playerEla, 'ela', 'right');
+
 
   iniciarDialogo.call(this, [
     { nome: 'Alexandre', texto: 'Bora pedir uma pizza então? 😄 Qual sabor você curte?' },
@@ -593,6 +683,7 @@ function iniciarDialogoFinalPizza() {
 
 function iniciarMissaoCasa() {
   gameState.missaoAtual = 'levarParaCasa';
+  atualizarMarcadorMissao.call(this);
   gameState.subMissao = null;
   gameState.personagemAtual = 'ela';
   this.cameras.main.startFollow(this.playerEla);
@@ -603,25 +694,24 @@ function iniciarMissaoCasa() {
 function chegouNaCasa() {
   gameState.dialogoAtivo = true;
   pararPersonagens.call(this);
-
-  this.playerEla.setPosition(520, 1850);
-  this.playerEle.setPosition(550, 1850);
-
+  gameState.missaoAtual = null;
+  atualizarMarcadorMissao.call(this);
+  this.playerEla.setPosition(520, 1870);
+  this.playerEle.setPosition(550, 1870);
 
   forcarDirecao(this.playerEle, 'ele', 'left');
   forcarDirecao(this.playerEla, 'ela', 'right');
 
-  
   iniciarDialogo.call(this, [
     { nome: 'Ana', texto: 'Obrigada por me trazer em casa, Alexandre. A noite foi ótima!' },
     { nome: 'Alexandre', texto: 'Eu que agradeço, Ana. A gente se vê na escola?' },
-    { nome: 'Ana', texto: 'Com certeza! Tchauzinho 😊' }
+    { nome: 'Ana', texto: 'Com certeza! 😊' }
   ], () => {
-    mostrarOpcoesFinal.call(this);
+    mostrarOpcoesConverCasa.call(this);
   });
 }
 
-function mostrarOpcoesFinal() {
+function mostrarOpcoesConverCasa() {
   
   gameState.dialogoAtivo = true;
 
@@ -693,7 +783,7 @@ function escolherBeijo() {
     { nome: 'Ana', texto: 'Ei, calma lá! rsrs. A gente acabou de se conhecer, Alexandre.' },
     { nome: 'Ana', texto: 'Quem sabe em um próximo encontro? 😉' }
   ], () => {
-    this.time.delayedCall(100, () => { mostrarOpcoesFinal.call(this); });
+    this.time.delayedCall(100, () => { mostrarOpcoesConverCasa.call(this); });
   });
 }
 
@@ -702,7 +792,7 @@ function escolherIrEmbora() {
     { nome: 'Alexandre', texto: 'Bom, então é isso. Boa noite, Ana!' },
     { nome: 'Ana', texto: 'Ué, já vai? Você não está esquecendo de me pedir nada não? rsrs' }
   ], () => {
-    this.time.delayedCall(100, () => { mostrarOpcoesFinal.call(this); });
+    this.time.delayedCall(100, () => { mostrarOpcoesConverCasa.call(this); });
   });
 }
 
@@ -777,25 +867,6 @@ function criarAnimacoes(scene) {
   });
 }
 
-function moverEleParaPizzaria() {
-  const destinoX = this.zonaPizzaria.x;
-  const destinoY = this.zonaPizzaria.y;
-  const dx = destinoX - this.playerEle.x;
-  const dy = destinoY - this.playerEle.y;
-
-  this.physics.moveTo(this.playerEle, destinoX, destinoY, 80);
-
-  if (Math.abs(dx) > Math.abs(dy)) {
-    this.playerEle.anims.play(dx > 0 ? 'ele-right' : 'ele-left', true);
-  } else {
-    this.playerEle.anims.play(dy > 0 ? 'ele-down' : 'ele-up', true);
-  }
-
-  if (Phaser.Math.Distance.Between(this.playerEle.x, this.playerEle.y, destinoX, destinoY) < 8) {
-    this.playerEle.setVelocity(0);
-    this.playerEle.anims.stop();
-  }
-}
 
 function olharUmParaOutro(playerAtivo, outro) {
   const direcao = playerAtivo.direction || 'down';
