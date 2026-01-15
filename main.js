@@ -65,8 +65,11 @@ const gameState = {
   subMissao: null,
   dialogoAtivo: false,
   conheceu: false,
+  temSinal: false,
+  sinalAtivo: false,
+  temMensagemPendente: false,
   love: 0,
-  
+
   encontroAtivado: false,
   jogoFinalizado: false // Nova flag para evitar loops no fim
 };
@@ -99,7 +102,7 @@ function create() {
   this.input.keyboard.on('keydown-TWO', () => pularParaConversa.call(this));
   this.input.keyboard.on('keydown-THREE', () => iniciarMissaoPizzaria.call(this));
   this.input.keyboard.on('keydown-FOUR', () => pularParaCasa.call(this));
-  
+
   // 2. Configuração do Mapa (APENAS UMA VEZ)
   const map = this.make.tilemap({ key: 'mapa' });
   const tileset = map.addTilesetImage(map.tilesets[0].name, 'tiles');
@@ -113,7 +116,7 @@ function create() {
 
   // 5. Inicialização dos Jogadores
   this.playerEla = this.physics.add.sprite(2342, 682, 'playerEla', FRAMES.ela.idle);
-  this.playerEle = this.physics.add.sprite(2382, 682, 'playerEle', FRAMES.ele.idle);
+  this.playerEle = this.physics.add.sprite(2982, 580, 'playerEle', FRAMES.ele.idle);
 
   this.playerEla.setCollideWorldBounds(true);
   this.playerEle.setCollideWorldBounds(true);
@@ -129,6 +132,15 @@ function create() {
 
   // 7. Configuração de Zonas e Colisões de Missão
   configurarZonas.call(this);
+
+  this.zonasSinal = [
+  criarZonaSinal(this, 2920, 558),
+  criarZonaSinal(this, 2360, 300),
+  criarZonaSinal(this, 874, 1042),
+  criarZonaSinal(this, 992, 1850),
+   criarZonaSinal(this, 52, 1920),
+];
+
 
   // 8. HUD - Coração
   this.hud = {};
@@ -151,9 +163,49 @@ function create() {
 
   // 9. Inicialização de UI
   atualizarHud.call(this);
+  inicializarHudSinal(this);
   criarDialogo.call(this);
-  
+
   atualizarMarcadorMissao.call(this);
+
+  inicializarTextoObjetivo(this);
+  mostrarObjetivo.call(this, "Vá até a escola", 4000);
+
+}
+
+function inicializarTextoObjetivo(scene) {
+  scene.textoObjetivo = scene.add.text(scene.cameras.main.centerX, 80, '', {
+    fontSize: '28px',
+    fontStyle: 'bold',
+    color: '#ffffff',
+    backgroundColor: '#00000088',
+    padding: { x: 15, y: 8 },
+    align: 'center'
+  })
+    .setOrigin(0.5)
+    .setScrollFactor(0)
+    .setDepth(10000)
+    .setAlpha(0);
+}
+
+function mostrarObjetivo(mensagem, duracao = 3000) {
+  if (!this.textoObjetivo) return;
+
+  this.textoObjetivo.setText(`🎯 OBJETIVO: ${mensagem}`);
+
+  // Animação de Fade In
+  this.tweens.add({
+    targets: this.textoObjetivo,
+    alpha: 1,
+    duration: 500,
+    onComplete: () => {
+      if (duracao > 0) {
+        this.time.delayedCall(duracao, () => {
+          this.tweens.add({ targets: this.textoObjetivo, alpha: 0, duration: 500 });
+        });
+      }
+    }
+  });
 }
 
 
@@ -161,26 +213,29 @@ function update() {
   if (gameState.dialogoAtivo) return;
 
   // 1. Identificar quem é quem (usando as funções que já existem no seu código)
-  const player = getPersonagemAtivo(this); 
+  const player = getPersonagemAtivo(this);
   const npc = getNpc(this); // Certifique-se que esta função existe no final do seu arquivo
-  
+
   // 2. Definir o tipo do NPC para as animações
   const tipoNpc = gameState.personagemAtual === 'ela' ? 'ele' : 'ela';
   const speed = 120;
 
+    // Atualizar Status de Sinal
+  atualizarStatusSinal(this);
+
   // 3. Lógica de Seguimento
   const missoesDeSeguir = ['levarParaCasa', 'irPizzaria', 'elaSegueEle'];
-  
+
   // Verificamos se o npc existe antes de tentar movê-lo para evitar erros
   if (npc && (missoesDeSeguir.includes(gameState.missaoAtual) || missoesDeSeguir.includes(gameState.subMissao))) {
     const distancia = Phaser.Math.Distance.Between(npc.x, npc.y, player.x, player.y);
 
     if (distancia > 30) {
       this.physics.moveToObject(npc, player, 110);
-      
+
       const dx = player.x - npc.x;
       const dy = player.y - npc.y;
-      
+
       if (Math.abs(dx) > Math.abs(dy)) {
         npc.anims.play(`${tipoNpc}-${dx > 0 ? 'right' : 'left'}`, true);
       } else {
@@ -220,8 +275,47 @@ function update() {
   this.playerEle.setDepth(this.playerEle.y);
 
   console.log(
-  `X: ${Math.floor(player.x)} | Y: ${Math.floor(player.y)}`
-);
+    `X: ${Math.floor(player.x)} | Y: ${Math.floor(player.y)}`
+  );
+}
+
+
+// --- SISTEMA DE SINAL ---
+function inicializarHudSinal(scene) {
+  scene.hudSinal = scene.add.text(scene.cameras.main.width - 20, 20, '❌ Sem sinal', {
+    fontSize: '24px', fontStyle: 'bold', color: '#ff4d4d', backgroundColor: '#00000088', padding: { x: 10, y: 5 }
+  }).setOrigin(1, 0).setScrollFactor(0).setDepth(10000);
+
+  scene.notificacaoMsg = scene.add.text(scene.cameras.main.width - 20, 60, '📩 Nova Mensagem!', {
+    fontSize: '20px', fontStyle: 'bold', color: '#ffff00', backgroundColor: '#000000aa', padding: { x: 10, y: 5 }
+  }).setOrigin(1, 0).setScrollFactor(0).setDepth(10000).setVisible(false);
+}
+
+function atualizarStatusSinal(scene) {
+  const player = getPersonagemAtivo(scene);
+  let temSinalAgora = false;
+  scene.zonasSinal.forEach(zona => {
+    if (scene.physics.overlap(player, zona)) temSinalAgora = true;
+  });
+
+  gameState.sinalAtivo = temSinalAgora;
+  if (temSinalAgora) {
+    scene.hudSinal.setText('📶 Sinal').setColor('#00ff00');
+    if (gameState.temMensagemPendente) 
+    scene.notificacaoMsg.setVisible(true);
+    verificarMensagemMissao.call(this)
+  } else {
+    scene.hudSinal.setText('❌ Sem sinal').setColor('#ff4d4d');
+    scene.notificacaoMsg.setVisible(false);
+  }
+}
+
+function criarZonaSinal(scene, x, y, largura = 230, altura = 230) {
+  const zona = scene.add.zone(x, y, largura, altura);
+  scene.physics.world.enable(zona);
+  zona.body.setAllowGravity(false);
+  zona.body.setImmovable(true);
+  return zona;
 }
 
 // --- 4. SISTEMA DE DIÁLOGOS ---
@@ -356,20 +450,36 @@ function configurarZonas() {
   this.physics.world.enable(this.zonaCasa);
   this.zonaCasa.body.setAllowGravity(false);
 
-  
+
   this.physics.add.overlap(this.playerEle, this.zonaCasa, () => {
     if (gameState.missaoAtual === 'levarParaCasa' && !gameState.dialogoAtivo) {
       chegouNaCasa.call(this);
     }
   });
 
-    // Zona porta casa ana
+  // Zona porta casa ana
   this.zonaPortaCasa = this.add.zone(576, 1708, 20, 20);
   this.physics.world.enable(this.zonaPortaCasa);
   this.zonaPortaCasa.body.setAllowGravity(false);
 
+  // Zona enviar mensagem
+  this.zonaEnviarMensagem = this.add.zone(878, 1050, 230, 230);
+  this.physics.world.enable(this.zonaEnviarMensagem);
+  this.zonaEnviarMensagem.body.setAllowGravity(false);
+
+  // Zona sinal de telefone
+  this.zonaEnviarMensagem = this.add.zone(878, 1050, 230, 230);
+  this.physics.world.enable(this.zonaEnviarMensagem);
+  this.zonaEnviarMensagem.body.setAllowGravity(false);
+
+  this.physics.add.overlap(this.playerEle, this.zonaEnviarMensagem, () => {
+    if (gameState.missaoAtual === 'enviaMensagem' && !gameState.dialogoAtivo) {
+      enviarMensagemAna.call(this);
+    }4
+  });
+
   // MARCA NO MAPA
-this.debugZonaCasa = marcarZonaNoMapa(this, this.zonaPortaCasa, 0x00ff00);
+  this.debugZonaCasa = marcarZonaNoMapa(this, this.zonaEnviarMensagem, 0x00ff00);
 
 
   // Colisões entre Personagens
@@ -380,6 +490,16 @@ this.debugZonaCasa = marcarZonaNoMapa(this, this.zonaPortaCasa, 0x00ff00);
       iniciarConvitePizza.call(this);
     }
   });
+}
+
+function criarZonaSinal(scene, x, y, largura = 230, altura = 230) {
+  const zona = scene.add.zone(x, y, largura, altura);
+  scene.physics.world.enable(zona);
+
+  zona.body.setAllowGravity(false);
+  zona.body.setImmovable(true);
+
+  return zona;
 }
 
 function atualizarMarcadorMissao() {
@@ -402,13 +522,13 @@ function atualizarMarcadorMissao() {
   // 3. Criar a sprite do marcador
   // Posicionamos um pouco acima da zona (y - 40) para parecer que está flutuando sobre o ponto
   this.marcadorSprite = this.add.sprite(zonaAlvo.x, zonaAlvo.y - 30, 'marcadorMissao');
-  
+
   this.marcadorSprite.setDepth(10000); // Garante que fique acima de tudo
 
   // 4. Efeito de flutuar (sobe e desce)
   this.tweens.add({
     targets: this.marcadorSprite,
-    y: zonaAlvo.y -10,
+    y: zonaAlvo.y - 10,
     duration: 800,
     yoyo: true,
     repeat: -1,
@@ -450,7 +570,7 @@ function trocarParaEle() {
   this.playerEla.body.moves = false;
   pararPersonagens.call(this);
   this.cameras.main.startFollow(this.playerEle);
-  console.log('Ela chegou. Agora vá conhecê-la.');
+  mostrarObjetivo.call(this, "Vá falar com a Ana", 2500);
   atualizarMarcadorMissao.call(this);
 }
 
@@ -491,6 +611,7 @@ function iniciarMissaoSala() {
   this.cameras.main.startFollow(this.playerEle);
   console.log('Missão: Vá para a sala de aula (ELE)');
   atualizarMarcadorMissao.call(this);
+  mostrarObjetivo.call(this, "O Sinal já bateu, vai para sala de aula", 3000);
 }
 
 function eleChegouNaSala() {
@@ -565,12 +686,13 @@ function finalizarAula() {
   pararEmIdle(this.playerEla, 'ela');
   pararEmIdle(this.playerEle, 'ele');
   console.log('Aula acabou. Missão 3 liberada ❤️');
+  mostrarObjetivo.call(this, "Encontre a Ana e a chame para sair", 3000);
 }
 
 function iniciarConvitePizza() {
   pararPersonagens.call(this);
   olharUmParaOutro.call(this, getPersonagemAtivo(this), getNpc(this));
-  
+
   iniciarDialogo.call(this, [
     { nome: 'Alexandre', texto: 'Oi… aula longa, né?' },
     { nome: 'Ana', texto: 'Sério? Nem achei tão ruim assim.' },
@@ -595,6 +717,7 @@ function iniciarMissaoPizzaria() {
   this.playerEle.body.moves = true;
   console.log('Missão: Siga Alexandre até a pizzaria');
   atualizarMarcadorMissao.call(this);
+  mostrarObjetivo.call(this, "Vá até a pizzaria do Paulo", 2000);
 }
 
 function iniciarDialogoPizza() {
@@ -687,7 +810,7 @@ function iniciarMissaoCasa() {
   gameState.subMissao = null;
   gameState.personagemAtual = 'ela';
   this.cameras.main.startFollow(this.playerEla);
-  
+  mostrarObjetivo.call(this, "Volte para a casa.", 3000);
 }
 
 
@@ -704,7 +827,7 @@ function chegouNaCasa() {
 
   iniciarDialogo.call(this, [
     { nome: 'Ana', texto: 'Obrigada por me trazer em casa, Alexandre. A noite foi ótima!' },
-    { nome: 'Alexandre', texto: 'Eu que agradeço, Ana. A gente se vê na escola?' },
+    { nome: 'Alexandre', texto: 'Gostei muito também, Ana. A gente se vê na escola?' },
     { nome: 'Ana', texto: 'Com certeza! 😊' }
   ], () => {
     mostrarOpcoesConverCasa.call(this);
@@ -712,10 +835,10 @@ function chegouNaCasa() {
 }
 
 function mostrarOpcoesConverCasa() {
-  
+
   gameState.dialogoAtivo = true;
 
-  gameState.missaoAtual = 'novaMissao'; 
+  gameState.missaoAtual = 'novaMissao';
   pararPersonagens.call(this);
   forcarDirecao(this.playerEle, 'ele', 'left');
   forcarDirecao(this.playerEla, 'ela', 'right');
@@ -731,9 +854,9 @@ function mostrarOpcoesConverCasa() {
 
   // 3. Limpar botões antigos se existirem (prevenção)
   if (this.botoesOpcoes) {
-    this.botoesOpcoes.forEach(b => { 
-      if(b.bg) b.bg.destroy(); 
-      if(b.txt) b.txt.destroy(); 
+    this.botoesOpcoes.forEach(b => {
+      if (b.bg) b.bg.destroy();
+      if (b.txt) b.txt.destroy();
     });
   }
   this.botoesOpcoes = [];
@@ -765,7 +888,7 @@ function mostrarOpcoesConverCasa() {
 
     bg.on('pointerover', () => bg.setFillStyle(0x444444, 1));
     bg.on('pointerout', () => bg.setFillStyle(0x000000, 0.8));
-    
+
     bg.on('pointerdown', () => {
       // Destruir botões imediatamente ao clicar
       this.botoesOpcoes.forEach(b => { b.bg.destroy(); b.txt.destroy(); });
@@ -789,7 +912,7 @@ function escolherBeijo() {
 
 function escolherIrEmbora() {
   iniciarDialogo.call(this, [
-    { nome: 'Alexandre', texto: 'Bom, então é isso. Boa noite, Ana!' },
+    { nome: 'Alexandre', texto: 'Vou deixar você entrar. Boa noite, Ana!' },
     { nome: 'Ana', texto: 'Ué, já vai? Você não está esquecendo de me pedir nada não? rsrs' }
   ], () => {
     this.time.delayedCall(100, () => { mostrarOpcoesConverCasa.call(this); });
@@ -797,20 +920,119 @@ function escolherIrEmbora() {
 }
 
 function escolherTelefone() {
-  iniciarDialogo.call(this, [
-    { nome: 'Alexandre', texto: 'Ana, eu adorei te conhecer... será que eu poderia anotar seu telefone?' },
-    { nome: 'Ana', texto: 'Claro! Anota aí: 99999-8888. Me manda um "oi" depois, tá?' },
-    { nome: 'Alexandre', texto: 'Pode deixar! Boa noite, Ana.' }
-  ], () => { iniciarProximaMissao.call(this); });
-  gameState.love += 10;
-  atualizarHud.call(this);
-}
+  // Bloqueia o controle manual
+  gameState.dialogoAtivo = true;
 
-function iniciarProximaMissao() {
-  gameState.missaoAtual = 'novaMissao'; 
   gameState.personagemAtual = 'ele';
   this.cameras.main.startFollow(this.playerEle);
-  console.log('Missão: Ana entrou em casa. Agora Alexandre deve voltar para a fazenda.');
+
+  iniciarDialogo.call(this, [
+   { nome: 'Alexandre', texto: 'Gostei muito de te conhecer… será que eu poderia anotar seu telefone?' },
+{ nome: 'Ana', texto: 'Claro! Anota aí: 65 96266-905. Me manda um “oi” depois, tá?' },
+{ nome: 'Alexandre', texto: 'Pode deixar! Boa noite, Ana.' },
+{ nome: 'Ana', texto: 'Talvez eu demore um pouco pra responder, porque o sinal aqui é bem ruim… só funciona em alguns lugares.'},
+{ nome: 'Ana', texto: 'Tchau! 😘'}
+], () => {
+    moverPlayer.call(this, {
+      personagem: this.playerEla,
+      tipo: 'ela',
+      x: 274,
+      y: 1808,
+      onFinish: () => {
+        gameState.dialogoAtivo = false;
+        enviarmensagemparaana.call(this);
+      }
+    });
+  });
+}
+
+function moverPlayer({ personagem, tipo, x, y, onFinish }) {
+  const cena = this;
+
+  personagem.body.setVelocity(0, 0);
+  personagem.body.enable = false;
+
+  // Movimento horizontal
+  cena.tweens.add({
+    targets: personagem,
+    x: x,
+    duration: 2000,
+    ease: 'Linear',
+    onStart: () => {
+      const anim = personagem.x > x ? `${tipo}-left` : `${tipo}-right`;
+      personagem.anims.play(anim, true);
+    },
+    onComplete: () => {
+
+      // Movimento vertical
+      cena.tweens.add({
+        targets: personagem,
+        y: y,
+        duration: 1000,
+        ease: 'Linear',
+        onStart: () => {
+          personagem.anims.play(`${tipo}-up`, true);
+        },
+        onComplete: () => {
+          personagem.anims.stop();
+          personagem.setVisible(false);
+
+          if (onFinish) onFinish();
+        }
+      });
+
+    }
+  });
+}
+
+
+function enviarmensagemparaana() {
+  gameState.missaoAtual = 'enviaMensagem';
+  gameState.personagemAtual = 'ele';
+  this.cameras.main.startFollow(this.playerEle);
+  mostrarObjetivo.call(this, "enviaMensagem", 3000);
+}
+
+function enviarMensagemAna(){
+
+  if (gameState.missaoAtual === 'mandarMensagem' && gameState.sinalAtivo) {
+    // Player tem sinal e está na missão, pode mandar a mensagem!
+    enviarMensagem.call(this, "Oi Ana!", "Alexandre");
+    mostrarObjetivo.call(this, "Mensagem enviada com sucesso!", 3000);
+}
+
+mostrarObjetivo.call(this, "Mensagem Enviada com sucesso", 3000);
+
+  this.playerEla.setVisible(true); 
+  gameState.personagemAtual = 'ela';
+  this.cameras.main.startFollow(this.playerEla);
+  this.playerEla.body.enable = true;
+
+}
+
+// --- 4. FUNÇÃO PARA ENVIAR MENSAGEM (USAR NAS MISSÕES) ---
+function enviarMensagem(texto, remetente) {
+  // Esta função simula o envio. Se o outro player estiver sem sinal, 
+  // a mensagem fica "pendente" até ele chegar em uma zona de sinal.
+  gameState.temMensagemPendente = true;
+  console.log(`Mensagem enviada por ${remetente}: ${texto}`);
+  
+  // Se o player atual já tiver sinal, avisa na hora
+  if (gameState.sinalAtivo) {
+    mostrarObjetivo.call(this, "Você recebeu uma mensagem! Procure sinal para ler.", 4000);
+  }
+}
+
+function verificarMensagemMissao() {
+  if (gameState.sinalAtivo && gameState.temMensagemPendente) {
+    // Se o player interagir ou apenas chegar no sinal, podemos disparar o diálogo da mensagem
+    gameState.temMensagemPendente = false;
+    this.notificacaoMsg.setVisible(false);
+    console.log(gameState.sinalAtivo, gameState.temMensagemPendente, 'ola')
+    iniciarDialogo.call(this, [
+      { nome: 'Celular', texto: '📱 Nova mensagem de Ana: "Oi Alexandre, já cheguei em casa! Obrigada por hoje."' }
+    ]);
+  }
 }
 
 // Atalhos de DEV
@@ -825,7 +1047,7 @@ function pularParaConversa() {
 
 function pularParaCasa() {
   console.log("Atalho: Pulando para o final na casa da Ana...");
-  
+
   // Configura o estado da missão
   gameState.missaoAtual = 'levarParaCasa';
   gameState.subMissao = null;
@@ -839,10 +1061,10 @@ function pularParaCasa() {
 
   // Ajusta a câmera
   this.cameras.main.startFollow(this.playerEla);
-  
+
   // Para qualquer movimento residual
   //pararPersonagens.call(this);
-  
+
   // Força a direção para parecer natural
   forcarDirecao(this.playerEle, 'ele', 'left');
   forcarDirecao(this.playerEla, 'ela', 'right');
