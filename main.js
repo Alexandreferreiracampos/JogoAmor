@@ -138,6 +138,12 @@ function preload() {
 }
 
 function create() {
+
+  this.filtroNoite = this.add.rectangle(0, 0, 1200, 720, 0x000033)
+    .setOrigin(0)
+    .setScrollFactor(0)
+    .setDepth(5000) // Certifique-se que o depth é alto para ficar por cima de tudo
+    .setAlpha(0);
   // 1. Atalhos de Desenvolvimento
   this.input.keyboard.on('keydown-ONE', () => iniciarMissaoSala.call(this));
   this.input.keyboard.on('keydown-TWO', () => pularParaConversa.call(this));
@@ -212,7 +218,7 @@ function create() {
 
   inicializarTextoObjetivo(this);
   mostrarObjetivo.call(this, "Vá até a escola", 4000);
-
+  
 }
 
 function inicializarTextoObjetivo(scene) {
@@ -263,12 +269,12 @@ function update() {
 
   // 2. Definir o tipo do NPC para as animações
   const tipoNpc = gameState.personagemAtual === 'ela' ? 'ele' : 'ela';
-  const speed = 120;
+  const speed = 420;
 
   if (gameState.dialogoAtivo) return;
 
   // 3. Lógica de Seguimento
-  const missoesDeSeguir = ['levarParaCasa', 'irPizzaria', 'elaSegueEle', 'levarParaCasaSegundoEncontro'];
+  const missoesDeSeguir = ['levarParaCasa', 'irPizzaria', 'elaSegueEle', 'levarParaCasaSegundoEncontro', 'irParaSaladeAula', 'irLanchoneteAlemao'];
 
   if (npc && (missoesDeSeguir.includes(gameState.missaoAtual) || missoesDeSeguir.includes(gameState.subMissao))) {
     const distancia = Phaser.Math.Distance.Between(npc.x, npc.y, player.x, player.y);
@@ -454,9 +460,17 @@ function configurarZonas() {
   this.physics.world.enable(this.zonaSala);
   this.zonaSala.body.setAllowGravity(false);
 
+  
+
   this.physics.add.overlap(this.playerEle, this.zonaSala, () => {
     if (gameState.missaoAtual === 'irParaSala' && gameState.subMissao === 'eleVai') {
       eleChegouNaSala.call(this);
+    }
+  });
+
+  this.physics.add.overlap(this.playerEla, this.zonaSala, () => {
+    if (gameState.missaoAtual === 'irParaSaladeAula') {
+      chegaranNaSala.call(this);
     }
   });
 
@@ -533,6 +547,17 @@ function configurarZonas() {
     }
   });
 
+  // Zona Alemao
+  this.zonaAlemao = this.add.zone(1726, 688, 40, 20);
+  this.physics.world.enable(this.zonaAlemao);
+  this.zonaAlemao.body.setAllowGravity(false);
+
+  this.physics.add.overlap(this.playerEla, this.zonaAlemao, () => {
+    if (gameState.missaoAtual === 'irLanchoneteAlemao' && !gameState.dialogoAtivo) {
+      iniciarDialogoAlemao.call(this);
+    }
+  });
+
   // MARCA NO MAPA
   //this.debugZonaCasa = marcarZonaNoMapa(this, this.zonaPraca, 0x00ff00);
 
@@ -547,7 +572,30 @@ function configurarZonas() {
     else if (gameState.missaoAtual === 'encontroPraca' && gameState.subMissao === 'eleVai' && !gameState.dialogoAtivo) {
       iniciarSegundoEncontro.call(this);
     }
+     else if (gameState.missaoAtual === 'irParaEscolaSegundaFeira' && gameState.subMissao === 'FalarComAlexandre' && !gameState.dialogoAtivo) {
+      conversarSegundaEscola.call(this);
+    }
   });
+}
+
+function mudarParaNoite(cena, duracao = 2000) {
+    if (!cena.filtroNoite) {
+        console.error("Filtro de noite não encontrado na cena!");
+        return;
+    }
+    cena.tweens.add({
+        targets: cena.filtroNoite,
+        alpha:0.7, // Aumentei um pouco para você notar a diferença
+        duration: duracao
+    });
+}
+
+function mudarParaDia(cena, duracao = 2000) {
+    cena.tweens.add({
+        targets: cena.filtroNoite,
+        alpha: 0, // Volta a ficar invisível
+        duration: duracao
+    });
 }
 
 function atualizarMarcadorMissao() {
@@ -565,7 +613,9 @@ function atualizarMarcadorMissao() {
   else if (gameState.missaoAtual === 'irAoTrabalho') zonaAlvo = this.zonaTrabalhoAna;
   else if (gameState.missaoAtual === 'encontroPraca') zonaAlvo = this.zonaPraca;
   else if (gameState.missaoAtual === 'levarParaCasaSegundoEncontro') zonaAlvo = this.zonaCasa;
-
+  else if (gameState.missaoAtual === 'irParaSaladeAula') zonaAlvo = this.zonaSala;
+   else if (gameState.missaoAtual === 'irLanchoneteAlemao') zonaAlvo = this.zonaAlemao;
+  
   if (!zonaAlvo) return;
 
   this.marcadorSprite = this.add.sprite(zonaAlvo.x, zonaAlvo.y - 30, 'marcadorMissao');
@@ -678,6 +728,7 @@ function ambosNaSala() {
   this.time.delayedCall(650, () => {
     this.cameras.main.fadeIn(1, 0, 0, 0);
     mostrarRelogioAnimado.call(this);
+    mudarParaNoite(this, 2000);
   });
 }
 
@@ -694,10 +745,10 @@ function mostrarRelogioAnimado() {
   const y = this.scale.height / 2 - 60;
 
   const bg = this.add.graphics().fillStyle(0x000000, 0.85).fillRoundedRect(x, y, 320, 120, 16).setScrollFactor(0).setDepth(9100);
-  const texto = this.add.text(x + 70, y + 35, '🕒 13:00', { fontSize: '32px', fontStyle: 'bold', color: '#ffffff' })
+  const texto = this.add.text(x + 70, y + 35, '🕒 18:00', { fontSize: '32px', fontStyle: 'bold', color: '#ffffff' })
     .setScrollFactor(0).setDepth(9200);
 
-  let hora = 13;
+  let hora = 18;
   this.time.addEvent({
     delay: 600,
     repeat: 4,
@@ -717,12 +768,14 @@ function mostrarRelogioAnimado() {
       onComplete: () => {
         overlay.destroy();
         finalizarAula.call(this);
+
       }
     });
   });
 }
 
 function finalizarAula() {
+  
   gameState.dialogoAtivo = false;
   gameState.missaoAtual = 'falarComEla';
   gameState.subMissao = null;
@@ -1074,6 +1127,8 @@ function enviarMensagem(texto, remetente) {
 }
 
 function segundoDia() {
+
+   mudarParaDia(this, 3000);
 
   this.playerEle.body.moves = true;
   mudarCameraDePlayer(this.cameras.main, this.playerEla, this);
@@ -1495,6 +1550,7 @@ function iniciarSegundoEncontro() {
       gameState.dialogoAtivo = false;
       this.playerEla.body.moves = true;
       this.playerEle.body.moves = true;
+      mudarParaNoite(this, 2000)
       mudarCameraDePlayer(this.cameras.main, this.playerEla, this);
       gameState.missaoAtual = 'levarParaCasaSegundoEncontro';
       mostrarObjetivo.call(this, "Voltar para casa 🏡", 4000);
@@ -1524,6 +1580,8 @@ function chegouNaCasaSegundoEncontro() {
     { nome: 'Ana', texto: 'É verdade. Então tá bom… vai com Deus e toma cuidado na estrada.' },
     { nome: 'Alexandre', texto: 'Amém. Fica com Deus também. Boa noite.' }
   ], () => {
+    pararPersonagens.call(this);
+     gameState.personagemAtual = 'ele';
     moverPlayer.call(this, {
       personagem: this.playerEla,
       tipo: 'ela',
@@ -1531,7 +1589,7 @@ function chegouNaCasaSegundoEncontro() {
       y: 1808,
       onFinish: () => {
         gameState.dialogoAtivo = false;
-        console.log('novammissão');
+        pularSegunda.call(this);
         gameState.love += 20;
         atualizarHud.call(this);
       }
@@ -1540,6 +1598,193 @@ function chegouNaCasaSegundoEncontro() {
   });
 }
 
+function pularSegunda(){
+
+ this.time.delayedCall(1000, () => {
+    gameState.dialogoAtivo = false;
+    this.cameras.main.fadeOut(600, 0, 0, 0);
+    this.time.delayedCall(650, () => {
+      this.cameras.main.fadeIn(1, 0, 0, 0);
+      this.playerEle.setVisible(false);
+      irParaEscolaSegunda.call(this);
+    });
+  });
+
+}
+
+function irParaEscolaSegunda() {
+
+  pararPersonagens.call(this);
+  
+  gameState.dialogoAtivo = false;
+  this.playerEla.body.moves = false;
+  mudarCameraDePlayer(this.cameras.main, this.playerEla, this);
+  mudarParaDia(this, 1000)
+  const overlay = this.add.rectangle(0, 0, this.scale.width, this.scale.height, 0x000000)
+    .setOrigin(0).setScrollFactor(0).setDepth(9000).setAlpha(1);
+
+  const x = this.scale.width / 2 - 160;
+  const y = this.scale.height / 2 - 60;
+
+  const bg = this.add.graphics().fillStyle(0x000000, 0.85).fillRoundedRect(x, y, 320, 120, 16).setScrollFactor(0).setDepth(9100);
+  const texto = this.add.text(x + 10, y + 35, 'Segunda-Feira', { fontSize: '32px', fontStyle: 'bold', color: '#ffffff' })
+    .setScrollFactor(0).setDepth(9200);
+
+  this.time.delayedCall(3500, () => {
+    bg.destroy();
+    texto.destroy();
+    this.tweens.add({
+      targets: overlay,
+      alpha: 0,
+      duration: 800,
+      onComplete: () => {
+        overlay.destroy();
+        gameState.missaoAtual = 'irParaEscolaSegundaFeira';
+        gameState.subMissao = 'FalarComAlexandre';
+        mostrarObjetivo.call(this, "Ir para a Escola", 4000);
+        this.playerEle.setVisible(true);
+        this.playerEle.setPosition(2962, 724);
+      }
+    });
+  });
+}
+
+
+function conversarSegundaEscola (){
+       
+      gameState.dialogoAtivo = false;
+      this.playerEla.body.moves = true;
+      this.playerEle.body.moves = true;
+      olharUmParaOutro.call(this, getPersonagemAtivo(this), getNpc(this));
+
+  iniciarDialogo.call(this, [
+    { nome: 'Ana', texto: 'Oi, me atrasei um pouco hoje 😁' },
+    { nome: 'Alexandre', texto: 'Eu percebi, achei que não ia mais vim, mas agora sei o motivo de tanta demora.' },
+    { nome: 'Ana', texto: 'Oque?' },
+    { nome: 'Alexandre', texto: 'Você esta maravilhosa 😍💕' },
+    { nome: 'Ana', texto: 'Aiaia, so você mesmo viu 😂 Estou normal como todos os outros dias' },
+    { nome: 'Alexandre', texto: 'Exatamente.' },
+    { nome: 'Ana', texto: 'Depois da Aula vamos la no Alemão mesmo?.' },
+    { nome: 'Alexandre', texto: 'Claro.' },
+    { nome: 'Ana', texto: 'Vamos pra a sala de Aula, jaja toca o sino.' },
+    { nome: 'Alexandre', texto: 'Vamos.' }
+  ], () => {
+    pararPersonagens.call(this);
+    gameState.dialogoAtivo = false;
+    gameState.personagemAtual = 'ela';
+    gameState.missaoAtual = 'irParaSaladeAula';
+    mostrarObjetivo.call(this, "Sinal tocal, vá para sala de aula", 4000);
+    gameState.subMissao = null;
+    atualizarMarcadorMissao.call(this);
+
+  });
+
+}
+
+function chegaranNaSala(){
+  pararPersonagens.call(this);
+  this.playerEla.body.moves = false;
+  gameState.dialogoAtivo = false;
+  gameState.missaoAtual = null;
+
+  this.time.delayedCall(500, () => {
+    
+    atualizarMarcadorMissao.call(this);
+    this.cameras.main.fadeOut(600, 0, 0, 0);
+    this.time.delayedCall(650, () => {
+      this.cameras.main.fadeIn(1, 0, 0, 0);
+      this.playerEle.setVisible(false);
+      finalDaAula.call(this);
+    });
+  });
+}
+
+function finalDaAula(){
+
+  this.playerEla.setPosition(2926, 363);
+  this.playerEle.setPosition(2926, 363);
+  this.playerEle.setVisible(true);
+   this.playerEla.body.moves = true;
+  mudarCameraDePlayer(this.cameras.main, this.playerEle, this);
+  mudarParaNoite(this, 0);
+
+  const overlay = this.add.rectangle(0, 0, this.scale.width, this.scale.height, 0x000000)
+    .setOrigin(0).setScrollFactor(0).setDepth(9000).setAlpha(1);
+
+  const x = this.scale.width / 2 - 160;
+  const y = this.scale.height / 2 - 60;
+
+  const bg = this.add.graphics().fillStyle(0x000000, 0.85).fillRoundedRect(x, y, 320, 120, 16).setScrollFactor(0).setDepth(9100);
+  const texto = this.add.text(x + 70, y + 35, '🕒 18:00', { fontSize: '32px', fontStyle: 'bold', color: '#ffffff' })
+    .setScrollFactor(0).setDepth(9200);
+
+  let hora = 18;
+  this.time.addEvent({
+    delay: 600,
+    repeat: 4,
+    callback: () => {
+      hora++;
+      texto.setText(`🕒 ${hora}:00`);
+    }
+  });
+
+  this.time.delayedCall(3500, () => {
+    bg.destroy();
+    texto.destroy();
+    this.tweens.add({
+      targets: overlay,
+      alpha: 0,
+      duration: 800,
+      onComplete: () => {
+        overlay.destroy();
+        terceiroEncontro.call(this);
+
+      }
+    });
+  });
+}
+
+function terceiroEncontro(){
+  gameState.missaoAtual = 'irLanchoneteAlemao';
+  gameState.subMissao = 'beijala';
+  mostrarObjetivo.call(this, "Ir até a lanchonete do Alemão", 4000);
+  atualizarMarcadorMissao.call(this);
+}
+
+function iniciarDialogoAlemao(){
+  pararPersonagens.call(this);
+  this.playerEle.setPosition(1743, 716);
+  this.playerEla.setPosition(1713, 716);
+  forcarDirecao(this.playerEle, 'ele', 'left');
+  forcarDirecao(this.playerEla, 'ela', 'right');
+  olharUmParaOutro.call(this, getPersonagemAtivo(this), getNpc(this));
+  this.playerEla.body.moves= false;
+  this.playerEle.body.moves = false;
+  gameState.missaoAtual = null;
+  gameState.subMissao = 'beijala';
+  atualizarMarcadorMissao.call(this);
+   iniciarDialogo.call(this, [
+    { nome: 'Alexandre', texto: 'E ai, oque você fez domingo ?' },
+    { nome: 'Ana', texto: 'Fiz uma serviços em casa, estava muito cansada, fui dormir cedo' },
+    { nome: 'Ana', texto: 'E você?' },
+    { nome: 'Alexandre', texto: 'Fiquei o dia todo no computador' },
+    { nome: 'Ana', texto: 'Aiaia, so você mesmo viu 😂 Nem me mandou uma mensagem' },
+    { nome: 'Alexandre', texto: 'Não quis te sufucar rsrsrs.' },
+    { nome: 'Ana', texto: 'Jamais.' },
+    { nome: 'Alexandre', texto: 'Pode deixar então, não vou mais te deixar em paz 🤣' },
+    { nome: 'Ana', texto: 'Quero ver.' },
+    { nome: 'Alexandre', texto: 'Vamos.' }
+  ], () => {
+    
+    gameState.dialogoAtivo = false;
+    gameState.personagemAtual = 'ela';
+    gameState.missaoAtual = '';
+    mostrarObjetivo.call(this, "Sinal tocal, vá para sala de aula", 4000);
+    gameState.subMissao = null;
+    atualizarMarcadorMissao.call(this);
+
+  });
+}
 
 // Atalhos de DEV
 function pularParaConversa() {
@@ -1581,10 +1826,20 @@ function enviarMensagemAlexandre() {
 }
 
 function encontroPracaterere() {
-
-
-
+      gameState.love += 10;
+      atualizarHud.call(this);
+      gameState.dialogoAtivo = false;
+      this.playerEla.body.moves = true;
+      this.playerEle.body.moves = true;
+      mudarParaNoite(this, 2000)
+      this.playerEla.setPosition(548, 1706);
+      this.playerEle.setPosition(548, 1706);
+      mudarCameraDePlayer(this.cameras.main, this.playerEla, this);
+      gameState.missaoAtual = 'levarParaCasaSegundoEncontro';
+      mostrarObjetivo.call(this, "Voltar para casa 🏡", 4000);
+      atualizarMarcadorMissao.call(this);
 }
+
 
 // --- 6. MOVIMENTAÇÃO E ANIMAÇÕES ---
 
