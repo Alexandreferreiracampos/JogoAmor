@@ -1,6 +1,58 @@
 
 // --- 1. CONFIGURAÇÕES E CONSTANTES ---
 
+// --- CENA DE INÍCIO ---
+class TelaInicial extends Phaser.Scene {
+  constructor() {
+    super({ key: 'TelaInicial' });
+  }
+
+  preload() {
+    // Você pode carregar uma imagem de fundo aqui se quiser
+    // this.load.image('fundoInicio', 'assets/fundo_inicio.png');
+  }
+
+  create() {
+    const { width, height } = this.scale;
+
+    // Frase principal
+    this.add.text(width / 1.9, height / 4 - 50, 'Aqui foi onde tudo começou ❤️', {
+      fontSize: '42px',
+      fontStyle: 'bold',
+      color: '#ffffff',
+      fontFamily: 'monospace'
+    }).setOrigin(0.5);
+
+     this.add.text(width / 2, height / 2 - 50, 'Posto Norte - 2012', {
+      fontSize: '42px',
+      fontStyle: 'bold',
+      color: '#ffffff',
+      fontFamily: 'monospace'
+    }).setOrigin(0.5);
+
+    // Botão Iniciar História
+    const botao = this.add.text(width / 2, height / 2 + 50, 'Iniciar História', {
+      fontSize: '32px',
+      color: '#ffd166',
+      backgroundColor: '#000000',
+      padding: { x: 20, y: 10 },
+      fontFamily: 'monospace'
+    })
+    .setOrigin(0.5)
+    .setInteractive({ useHandCursor: true });
+
+    // Efeito de hover (passar o mouse)
+    botao.on('pointerover', () => botao.setStyle({ color: '#ffffff' }));
+    botao.on('pointerout', () => botao.setStyle({ color: '#ffd166' }));
+
+    // Ação de clicar: Muda para a cena principal do jogo
+    botao.on('pointerdown', () => {
+      this.scene.start('CenaJogo');
+    });
+  }
+}
+
+
 const config = {
   type: Phaser.AUTO,
   width: 1200,
@@ -17,7 +69,7 @@ const config = {
       debug: false
     }
   },
-  scene: { preload, create, update }
+   scene: [TelaInicial, { key: 'CenaJogo', preload, create, update }]
 };
 
 const FRAMES = {
@@ -64,6 +116,7 @@ const gameState = {
 
 new Phaser.Game(config);
 
+
 // --- 3. FUNÇÕES PRINCIPAIS ---
 
 function preload() {
@@ -105,7 +158,7 @@ function create() {
   this.cameras.main.setBackgroundColor('#84C669');
 
   // 5. Inicialização dos Jogadores
-  this.playerEla = this.physics.add.sprite(2342, 682, 'playerEla', FRAMES.ela.idle);
+  this.playerEla = this.physics.add.sprite(270, 1820, 'playerEla', FRAMES.ela.idle);
   this.playerEle = this.physics.add.sprite(2982, 580, 'playerEle', FRAMES.ele.idle);
 
   this.playerEla.setCollideWorldBounds(true);
@@ -436,6 +489,12 @@ function configurarZonas() {
     }
   });
 
+  this.physics.add.overlap(this.playerEle, this.zonaCasa, () => {
+    if (gameState.missaoAtual === 'levarParaCasaSegundoEncontro' && !gameState.dialogoAtivo) {
+      chegouNaCasaSegundoEncontro.call(this);
+    }
+  });
+
   // Zona porta casa ana
   this.zonaPortaCasa = this.add.zone(576, 1708, 20, 20);
   this.physics.world.enable(this.zonaPortaCasa);
@@ -463,25 +522,19 @@ function configurarZonas() {
     }
   });
 
-  // Zona Praça (Exemplo de coordenadas, ajuste se necessário)
-  this.zonaPraca = this.add.zone(762, 1010, 20, 20);
+  // Zona Praça 
+  this.zonaPraca = this.add.zone(782, 1010, 20, 20);
   this.physics.world.enable(this.zonaPraca);
   this.zonaPraca.body.setAllowGravity(false);
 
   this.physics.add.overlap(this.playerEla, this.zonaPraca, () => {
     if (gameState.missaoAtual === 'encontroPraca' && gameState.subMissao === 'elaVai' && !gameState.dialogoAtivo) {
-      mudarparaAlexandreEncontroPraca.call(this);
-    }
-  });
-
-  this.physics.add.overlap(this.playerEle, this.zonaPraca, () => {
-    if (gameState.missaoAtual === 'encontroPraca' && gameState.subMissao === 'eleVai' && !gameState.dialogoAtivo) {
-      iniciarSegundoEncontro.call(this)
+      senaEsperaNaPraca.call(this);
     }
   });
 
   // MARCA NO MAPA
-  this.debugZonaCasa = marcarZonaNoMapa(this, this.zonaPraca, 0x00ff00);
+  //this.debugZonaCasa = marcarZonaNoMapa(this, this.zonaPraca, 0x00ff00);
 
 
   // Colisões entre Personagens
@@ -490,6 +543,9 @@ function configurarZonas() {
       iniciarEncontro.call(this);
     } else if (gameState.missaoAtual === 'falarComEla' && !gameState.dialogoAtivo) {
       iniciarConvitePizza.call(this);
+    }
+    else if (gameState.missaoAtual === 'encontroPraca' && gameState.subMissao === 'eleVai' && !gameState.dialogoAtivo) {
+      iniciarSegundoEncontro.call(this);
     }
   });
 }
@@ -508,6 +564,7 @@ function atualizarMarcadorMissao() {
   else if (gameState.missaoAtual === 'enviaMensagem') zonaAlvo = this.zonaEnviarMensagem;
   else if (gameState.missaoAtual === 'irAoTrabalho') zonaAlvo = this.zonaTrabalhoAna;
   else if (gameState.missaoAtual === 'encontroPraca') zonaAlvo = this.zonaPraca;
+  else if (gameState.missaoAtual === 'levarParaCasaSegundoEncontro') zonaAlvo = this.zonaCasa;
 
   if (!zonaAlvo) return;
 
@@ -583,7 +640,7 @@ function iniciarEncontro() {
     { nome: 'Alexandre', texto: 'Foi mal 🥲' },
     { nome: 'Ana', texto: 'Você é parente do Edinho?' },
     { nome: 'Alexandre', texto: 'Sim, ele é meu tio. Por quê?' },
-    { nome: 'Ana', texto: 'Que legal… achei vocês bem parecidos. Quando cheguei, até pensei que fosse ele. Talvez a gente se veja mais por aqui.' },
+    { nome: 'Ana', texto: 'Que legal… achei vocês bem parecidos. Quando cheguei, até pensei que fosse ele.' },
     { nome: 'Alexandre', texto: 'Então você me viu quando chegou, rsrs' },
     { nome: 'Ana', texto: 'Vi sim, rsrs' },
     { nome: 'Alexandre', texto: 'Já vão começar as aulas! Você está em qual série?' },
@@ -604,6 +661,7 @@ function iniciarMissaoSala() {
 }
 
 function eleChegouNaSala() {
+  6
   gameState.subMissao = 'elaVai';
   this.playerEle.setVelocity(0);
   this.playerEle.anims.stop();
@@ -1125,7 +1183,7 @@ function fimDoExpediente() {
             { nome: 'Ana', texto: 'Ainda bem que o expediente acabou 🙌' },
             { nome: 'Ana', texto: 'Acho que vou convidar o Alexandre para tomar um tereré' },
             { nome: 'Ana', texto: 'Só preciso conseguir sinal de telefone, aqui não está funcionando😒 ' },
-          ], () => { gameState.dialogoAtivo = false; });
+          ], () => { gameState.dialogoAtivo = false; this.playerEle.setVisible(false); });
         });
       }
     });
@@ -1236,14 +1294,14 @@ function realizarContato(tipo) {
     ];
   }
 
-  if(tipo === 'mensagem'){
-     iniciarDialogo.call(this, falas, () => {
+  if (tipo === 'mensagem') {
+    iniciarDialogo.call(this, falas, () => {
       gameState.dialogoAtivo = false;
       aguardarMensagemDeConfirmacao.call(this)
     });
 
 
-  }else {
+  } else {
 
     // Garantimos que o estado de diálogo seja resetado corretamente ao final
     iniciarDialogo.call(this, falas, () => {
@@ -1265,49 +1323,96 @@ function realizarContato(tipo) {
 
 }
 
-function aguardarMensagemDeConfirmacao(){
+function aguardarMensagemDeConfirmacao() {
 
-     
-      gameState.missaoAtual = 'encontroPraca';
 
-      this.time.delayedCall(1000, () => {
-          mostrarObjetivo.call(this, "📩 Nova Mensagem!", 4000);
-          iniciarDialogo.call(this, [
-             { nome: 'Celular📱', texto: '💌 Nova mensagem de Alexandre: ""Oi, Ana! Claro que topo 😄 Te encontro na praça em 20 minutos."" '}
-            ], () => { 
-              gameState.dialogoAtivo = false; 
-              mensagemRecebidaDeConfirmalcao.call(this);
-              });
-        });
+  gameState.missaoAtual = 'encontroPraca';
 
-  
+  this.time.delayedCall(1000, () => {
+    mostrarObjetivo.call(this, "📩 Nova Mensagem!", 4000);
+    iniciarDialogo.call(this, [
+      { nome: 'Celular📱', texto: '💌 Nova mensagem de Alexandre: ""Oi, Ana! Claro que topo 😄 Te encontro na praça em 20 minutos."" ' }
+    ], () => {
+      gameState.dialogoAtivo = false;
+      mensagemRecebidaDeConfirmalcao.call(this);
+    });
+  });
+
+
 }
 
-function mensagemRecebidaDeConfirmalcao(){
-      gameState.dialogoAtivo = false;
-      gameState.missaoAtual = 'encontroPraca';
-      gameState.subMissao = 'elaVai'
-      mostrarObjetivo.call(this, "Vá para o local marcado", 4000);
-      atualizarMarcadorMissao.call(this);
-      // Forçamos o player a recuperar o movimento
-      const player = getPersonagemAtivo(this);
-      if (player && player.body) {
-        player.body.moves = true;
-        player.setVelocity(0);
-      }
+function mensagemRecebidaDeConfirmalcao() {
+  gameState.dialogoAtivo = false;
+  gameState.missaoAtual = 'encontroPraca';
+  gameState.subMissao = 'elaVai'
+  mostrarObjetivo.call(this, "Vá para o local marcado", 4000);
+  atualizarMarcadorMissao.call(this);
+  // Forçamos o player a recuperar o movimento
+  const player = getPersonagemAtivo(this);
+  if (player && player.body) {
+    player.body.moves = true;
+    player.setVelocity(0);
+  }
+}
+
+function senaEsperaNaPraca() {
+  
+  pararPersonagens.call(this);
+  this.playerEla.body.moves = false;
+  gameState.personagemAtual = 'ele';
+  gameState.missaoAtual = null;
+  atualizarMarcadorMissao.call(this);
+  this.time.delayedCall(1000, () => {
+    gameState.dialogoAtivo = false;
+    this.cameras.main.fadeOut(600, 0, 0, 0);
+    this.time.delayedCall(650, () => {
+      this.cameras.main.fadeIn(1, 0, 0, 0);
+      this.playerEle.setVisible(false);
+      mudarparaAlexandreEncontroPraca.call(this);
+    });
+  });
+
 }
 
 function mudarparaAlexandreEncontroPraca() {
+
   pararPersonagens.call(this);
+  
+  gameState.dialogoAtivo = false;
   this.playerEla.body.moves = false;
-  gameState.subMissao = 'eleVai';
-  mostrarObjetivo.call(this, "A Paula esta te esperando na praça.", 4000);
-  this.playerEle.setVisible(true);
   mudarCameraDePlayer(this.cameras.main, this.playerEle, this);
 
+  const overlay = this.add.rectangle(0, 0, this.scale.width, this.scale.height, 0x000000)
+    .setOrigin(0).setScrollFactor(0).setDepth(9000).setAlpha(1);
+
+  const x = this.scale.width / 2 - 160;
+  const y = this.scale.height / 2 - 60;
+
+  const bg = this.add.graphics().fillStyle(0x000000, 0.85).fillRoundedRect(x, y, 320, 120, 16).setScrollFactor(0).setDepth(9100);
+  const texto = this.add.text(x + 10, y + 35, 'Alguns minutos depois...', { fontSize: '32px', fontStyle: 'bold', color: '#ffffff' })
+    .setScrollFactor(0).setDepth(9200);
+
+  this.time.delayedCall(3500, () => {
+    bg.destroy();
+    texto.destroy();
+    this.tweens.add({
+      targets: overlay,
+      alpha: 0,
+      duration: 800,
+      onComplete: () => {
+        overlay.destroy();
+        gameState.missaoAtual = 'encontroPraca';
+        gameState.subMissao = 'eleVai';
+        mostrarObjetivo.call(this, "A Paula esta te esperando na praça.", 4000);
+        this.playerEle.setVisible(true);
+      }
+    });
+  });
 }
 
-function iniciarSegundoEncontro(){
+
+
+function iniciarSegundoEncontro() {
 
   gameState.dialogoAtivo = true;
   pararPersonagens.call(this);
@@ -1317,7 +1422,7 @@ function iniciarSegundoEncontro(){
   gameState.missaoAtual = null;
   atualizarMarcadorMissao.call(this);
   olharUmParaOutro.call(this, getPersonagemAtivo(this), getNpc(this));
-  
+
   this.playerEla.setPosition(788, 1004);
   this.playerEle.setPosition(816, 1004);
 
@@ -1326,76 +1431,115 @@ function iniciarSegundoEncontro(){
 
 
   iniciarDialogo.call(this,
-  [{ nome: 'Alexandre', texto: 'Oi… nada melhor que um tereré pra refrescar depois do dia, né?' },
-  { nome: 'Ana', texto: 'Nossa, sim! Essa praça é bem tranquila…' },
+    [{ nome: 'Alexandre', texto: 'Oi… nada melhor que um tereré pra refrescar depois do dia, né?' },
+    { nome: 'Ana', texto: 'Nossa, sim! Essa praça é bem tranquila…' },
 
-  { nome: 'Alexandre', texto: 'Como foi seu trabalho hoje?' },
-  { nome: 'Ana', texto: 'Muita correria. Tem dias que dá vontade de sair correndo, rsrs.' },
+    { nome: 'Alexandre', texto: 'Como foi seu trabalho hoje?' },
+    { nome: 'Ana', texto: 'Muita correria. Tem dias que dá vontade de sair correndo, rsrs.' },
 
-  { nome: 'Alexandre', texto: 'Imagino.' },
-  { nome: 'Ana', texto: 'Ainda bem que hoje foi só até meio-dia, dá pra curtir o final do dia tranquila.' },
+    { nome: 'Alexandre', texto: 'Imagino.' },
+    { nome: 'Ana', texto: 'Ainda bem que hoje foi só até meio-dia, dá pra curtir o final do dia tranquila.' },
 
-  { nome: 'Alexandre', texto: 'Espero que curta mesmo, porque eu estava bem ansioso pra te ver de novo, rsrs.' },
-  { nome: 'Ana', texto: 'Sério? Você nem mandou mensagem hoje… recebi a de ontem e achei que ia falar comigo hoje, rsrs.' },
+    { nome: 'Alexandre', texto: 'Espero que curta mesmo, porque eu estava bem ansioso pra te ver de novo, rsrs.' },
+    { nome: 'Ana', texto: 'Sério? Você nem mandou mensagem hoje… recebi a de ontem e achei que ia falar comigo hoje, rsrs.' },
 
-  { nome: 'Alexandre', texto: 'Pensei em mandar, mas estava esperando você responder. Fiquei feliz quando você me chamou pra sair de novo hoje.' },
-  { nome: 'Ana', texto: 'Que bom! Eu não ia fazer nada de importante mesmo, kkkkk. Brincadeira!' },
+    { nome: 'Alexandre', texto: 'Pensei em mandar, mas estava esperando você responder. Fiquei feliz quando você me chamou pra sair de novo hoje.' },
+    { nome: 'Ana', texto: 'Que bom! Eu não ia fazer nada de importante mesmo, kkkkk. Brincadeira!' },
 
-  { nome: 'Alexandre', texto: 'Agora não sei se fico triste ou feliz com isso, kkkkk.' },
-  { nome: 'Alexandre', texto: 'Mas falando sério… gostei bastante de você. Acho que nunca conheci alguém assim.' },
+    { nome: 'Alexandre', texto: 'Agora não sei se fico triste ou feliz com isso, kkkkk.' },
+    { nome: 'Alexandre', texto: 'Mas falando sério… gostei bastante de você. Acho que nunca conheci alguém assim.' },
 
-  { nome: 'Ana', texto: 'Nossa, como você é rápido… direto ao ponto assim.' },
-  { nome: 'Ana', texto: 'Vai me dizer que em Goiânia não tinha meninas legais também?' },
+    { nome: 'Ana', texto: 'Nossa, como você é rápido… direto ao ponto assim.' },
+    { nome: 'Ana', texto: 'Vai me dizer que em Goiânia não tinha meninas legais também?' },
 
-  { nome: 'Alexandre', texto: 'Igual a você, não. Não sei explicar, mas quando te vi na escola senti algo diferente.' },
-  { nome: 'Alexandre', texto: 'Nãosei explicar.'},
+    { nome: 'Alexandre', texto: 'Igual a você, não. Não sei explicar, mas quando te vi na escola senti algo diferente.' },
+    { nome: 'Alexandre', texto: 'Serio mesmo.' },
 
-  { nome: 'Ana', texto: 'Humm… sei. Aposto que você fala isso pra todas, rsrs.' },
-  { nome: 'Ana', texto: 'Fiquei sabendo que já tinha uma menina interessada em você.' },
+    { nome: 'Ana', texto: 'Humm… sei. Aposto que você fala isso pra todas, rsrs.' },
+    { nome: 'Ana', texto: 'Fiquei sabendo que já tinha uma menina interessada em você.' },
 
-  { nome: 'Alexandre', texto: 'Quem? A Daiane?' },
-  { nome: 'Ana', texto: 'Tá vendo? Lembra até o nome dela.' },
+    { nome: 'Alexandre', texto: 'Quem? A Daiane?' },
+    { nome: 'Ana', texto: 'Tá vendo? Lembra até o nome dela.' },
 
-  { nome: 'Alexandre', texto: 'Ela até falou comigo, mas sabe que não tenho nenhum interesse. Já deixei claro, rsrs.' },
-  { nome: 'Ana', texto: 'Vou fingir que acredito.' },
+    { nome: 'Alexandre', texto: 'Ela até falou comigo, mas sabe que não tenho nenhum interesse. Já deixei claro, rsrs.' },
+    { nome: 'Ana', texto: 'Vou fingir que acredito.' },
 
-  { nome: 'Alexandre', texto: 'E você? Como anda sua vida amorosa? rsrs.' },
-  { nome: 'Ana', texto: 'Meio complicada… eu estava namorando, mas estamos dando um tempo.' },
+    { nome: 'Alexandre', texto: 'E você? Como anda sua vida amorosa? rsrs.' },
+    { nome: 'Ana', texto: 'Meio complicada… eu estava namorando, mas estamos dando um tempo.' },
 
-  { nome: 'Alexandre', texto: 'Vixi… não quero atrapalhar nada, viu?' },
-  { nome: 'Ana', texto: 'Nada. Acho que já deu o que tinha que dar. Ele nem mora aqui, era namoro à distância.' },
+    { nome: 'Alexandre', texto: 'Vixi… não quero atrapalhar nada, viu?' },
+    { nome: 'Ana', texto: 'Nada. Acho que já deu o que tinha que dar. Ele nem mora aqui, era namoro à distância.' },
 
-  { nome: 'Alexandre', texto: 'Então só espero que você faça o que for melhor pra você.' },
-  { nome: 'Ana', texto: 'Eu também.' },
+    { nome: 'Alexandre', texto: 'Então só espero que você faça o que for melhor pra você.' },
+    { nome: 'Ana', texto: 'Eu também.' },
 
-  { nome: 'Alexandre', texto: 'Já está ficando tarde…' },
-  { nome: 'Ana', texto: 'Verdade. Meus pais vão estranhar se eu demorar muito.' },
+    { nome: 'Alexandre', texto: 'Já está ficando tarde…' },
+    { nome: 'Ana', texto: 'Verdade. Meus pais vão estranhar se eu demorar muito.' },
 
-  { nome: 'Alexandre', texto: 'Então vamos fazer assim… segunda-feira, depois da aula, a gente se encontra de novo?' },
-  { nome: 'Ana', texto: 'À noite?' },
+    { nome: 'Alexandre', texto: 'Então vamos fazer assim… segunda-feira, depois da aula, a gente se encontra de novo?' },
+    { nome: 'Ana', texto: 'À noite?' },
 
-  { nome: 'Alexandre', texto: 'À noite. A gente sai pra comer um lanche.' },
-  { nome: 'Ana', texto: 'Então combinado.' },
+    { nome: 'Alexandre', texto: 'À noite. A gente sai pra comer um lanche.' },
+    { nome: 'Ana', texto: 'Então combinado.' },
 
-  { nome: 'Alexandre', texto: 'Vamos, eu te acompanho até em casa.' },
-  { nome: 'Ana', texto: 'Meus pais vão estranhar você me levando de novo… ontem já perguntaram de você, rsrs.' },
+    { nome: 'Alexandre', texto: 'Vamos, eu te acompanho até em casa.' },
+    { nome: 'Ana', texto: 'Meus pais vão estranhar você me levando de novo… ontem já perguntaram de você, rsrs.' },
 
-  { nome: 'Alexandre', texto: 'Então é melhor eu ir me preparando pra conhecer meu futuro sogro e minha futura sogra.' },
-  { nome: 'Ana', texto: 'kkkkkkk' },
-  { nome: 'Ana', texto: 'Então vamos.' },
-], () => {  
-        
-        gameState.love += 10;
-        atualizarHud.call(this);
-        gameState.dialogoAtivo = false;
-        this.playerEla.body.moves = true;
-        this.playerEle.body.moves = true;
-        mudarCameraDePlayer(this.cameras.main, this.playerEla, this);
-        gameState.missaoAtual = 'levarParaCasaSegundoEncontro';
+    { nome: 'Alexandre', texto: 'Então é melhor eu ir me preparando pra conhecer meu futuro sogro e minha futura sogra.' },
+    { nome: 'Ana', texto: 'kkkkkkk' },
+    { nome: 'Ana', texto: 'Então vamos.' },
+    ], () => {
 
-  });
+      gameState.love += 10;
+      atualizarHud.call(this);
+      gameState.dialogoAtivo = false;
+      this.playerEla.body.moves = true;
+      this.playerEle.body.moves = true;
+      mudarCameraDePlayer(this.cameras.main, this.playerEla, this);
+      gameState.missaoAtual = 'levarParaCasaSegundoEncontro';
+      mostrarObjetivo.call(this, "Voltar para casa 🏡", 4000);
+      atualizarMarcadorMissao.call(this);
+
+    });
 
 }
+
+
+function chegouNaCasaSegundoEncontro() {
+  gameState.dialogoAtivo = true;
+  pararPersonagens.call(this);
+  gameState.missaoAtual = null;
+  atualizarMarcadorMissao.call(this);
+  this.playerEla.setPosition(520, 1870);
+  this.playerEle.setPosition(550, 1870);
+
+  forcarDirecao(this.playerEle, 'ele', 'left');
+  forcarDirecao(this.playerEla, 'ela', 'right');
+
+  iniciarDialogo.call(this, [
+    { nome: 'Ana', texto: 'Obrigada por me acompanhar até em casa de novo. Nossa tarde foi ótima… eu adorei 😁' },
+    { nome: 'Alexandre', texto: 'Eu também gostei muito. Não poderia ter sido melhor.' },
+    { nome: 'Ana', texto: 'Com certeza! 😊' },
+    { nome: 'Alexandre', texto: 'Até poderia… mas deixamos isso para outro dia.' },
+    { nome: 'Ana', texto: 'É verdade. Então tá bom… vai com Deus e toma cuidado na estrada.' },
+    { nome: 'Alexandre', texto: 'Amém. Fica com Deus também. Boa noite.' }
+  ], () => {
+    moverPlayer.call(this, {
+      personagem: this.playerEla,
+      tipo: 'ela',
+      x: 274,
+      y: 1808,
+      onFinish: () => {
+        gameState.dialogoAtivo = false;
+        console.log('novammissão');
+        gameState.love += 20;
+        atualizarHud.call(this);
+      }
+    });
+
+  });
+}
+
 
 // Atalhos de DEV
 function pularParaConversa() {
@@ -1437,8 +1581,8 @@ function enviarMensagemAlexandre() {
 }
 
 function encontroPracaterere() {
- 
- 
+
+
 
 }
 
