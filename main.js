@@ -386,6 +386,7 @@ function realizarContato(tipo) {
   iniciarDialogo.call(this, falas, () => {
     gameState.dialogoAtivo = false;
     gameState.missaoAtual = 'encontroPraca';
+    gameState.subMissao = 'elaVai'
     mostrarObjetivo.call(this, "Vá para o local marcado no mapa", 4000);
     atualizarMarcadorMissao.call(this);
     
@@ -393,11 +394,18 @@ function realizarContato(tipo) {
     const player = getPersonagemAtivo(this);
     if (player && player.body) {
       player.body.moves = true;
-      this.playerEle.setVisible(true);
-      mudarCameraDePlayer(this.cameras.main, this.playerEle, this);
       player.setVelocity(0);
     }
   });
+}
+
+function mudarparaAlexandreEncontroPraca(){
+      pararPersonagens.call(this);
+      this.playerEla.body.moves = false;
+      gameState.subMissao = 'eleVai';
+      this.playerEle.setVisible(true);
+      mudarCameraDePlayer(this.cameras.main, this.playerEle, this);
+
 }
 
 function criarZonaSinal(scene, x, y, largura = 230, altura = 230) {
@@ -587,9 +595,15 @@ function configurarZonas() {
   this.physics.world.enable(this.zonaPraca);
   this.zonaPraca.body.setAllowGravity(false);
 
+   this.physics.add.overlap(this.playerEla, this.zonaPraca, () => {
+    if (gameState.missaoAtual === 'encontroPraca' && gameState.subMissao === 'elaVai' && !gameState.dialogoAtivo) {
+      mudarparaAlexandreEncontroPraca.call(this);
+    }
+  });
+
    this.physics.add.overlap(this.playerEle, this.zonaPraca, () => {
-    if (gameState.missaoAtual === 'encontroPraca' && !gameState.dialogoAtivo) {
-      console.log('ana')
+    if (gameState.missaoAtual === 'encontroPraca' && gameState.subMissao === 'eleVai' && !gameState.dialogoAtivo) {
+      console.log('Alexandre no local')
     }
   });
 
