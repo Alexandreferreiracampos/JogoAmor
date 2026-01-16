@@ -1,12 +1,3 @@
-/**
- * JOGO PHASER - REORGANIZADO E CORRIGIDO V2
- * -------------------------
- * Ajustes realizados:
- * 1. Player para de andar ao enviar mensagem.
- * 2. Troca automática para a personagem 'ela' após o envio.
- * 3. Personagem 'ela' torna-se visível novamente.
- * 4. Sistema de recebimento de mensagem ajustado para a Ana.
- */
 
 // --- 1. CONFIGURAÇÕES E CONSTANTES ---
 
@@ -100,6 +91,7 @@ function create() {
   this.input.keyboard.on('keydown-THREE', () => iniciarMissaoPizzaria.call(this));
   this.input.keyboard.on('keydown-FOUR', () => pularParaCasa.call(this));
   this.input.keyboard.on('keydown-FIVE', () => pularescola.call(this));
+  this.input.keyboard.on('keydown-SIX', () => enviarMensagemAlexandre.call(this));
 
   // 2. Configuração do Mapa (APENAS UMA VEZ)
   const map = this.make.tilemap({ key: 'mapa' });
@@ -207,6 +199,9 @@ function mostrarObjetivo(mensagem, duracao = 3000) {
 
 
 function update() {
+  // Atualizar Status de Sinal (Sempre rodar para checar o menu)
+  atualizarStatusSinal(this);
+
   if (gameState.dialogoAtivo) return;
 
   // 1. Identificar quem é quem
@@ -216,9 +211,6 @@ function update() {
   // 2. Definir o tipo do NPC para as animações
   const tipoNpc = gameState.personagemAtual === 'ela' ? 'ele' : 'ela';
   const speed = 120;
-
-  // Atualizar Status de Sinal
-  atualizarStatusSinal(this);
 
   if (gameState.dialogoAtivo) return;
 
@@ -306,10 +298,106 @@ function atualizarStatusSinal(scene) {
       scene.notificacaoMsg.setVisible(true);
       verificarMensagemMissao.call(scene);
     }
+
+    // Lógica para o menu de contato após o trabalho
+    if (gameState.missaoAtual === 'EnviarMensagemAlexandre' && !gameState.dialogoAtivo && !scene.menuContatoAtivo) {
+      abrirMenuContato.call(scene);
+    }
   } else {
     scene.hudSinal.setText('❌ Sem sinal').setColor('#ff4d4d');
     scene.notificacaoMsg.setVisible(false);
   }
+}
+
+function abrirMenuContato() {
+  if (this.menuContatoAtivo) return;
+  this.menuContatoAtivo = true;
+  gameState.dialogoAtivo = true;
+  pararPersonagens.call(this);
+
+  const x = this.cameras.main.centerX;
+  const y = this.cameras.main.centerY;
+
+  // Criamos um grupo para facilitar a limpeza posterior
+  this.menuGroup = this.add.group();
+
+  // 1. Fundo que bloqueia cliques em qualquer outra coisa (Overlay)
+  const overlay = this.add.rectangle(0, 0, this.scale.width, this.scale.height, 0x000000, 0.7)
+    .setOrigin(0).setScrollFactor(0).setDepth(90000).setInteractive();
+
+  // 2. Fundo do Menu
+  const bg = this.add.graphics().setScrollFactor(0).setDepth(90001);
+  bg.fillStyle(0x000000, 1);
+  bg.fillRoundedRect(x - 200, y - 110, 400, 220, 15);
+  bg.lineStyle(4, 0xffffff, 1);
+  bg.strokeRoundedRect(x - 200, y - 110, 400, 220, 15);
+
+  // 3. Título
+  const titulo = this.add.text(x, y - 70, 'CONTATAR ALEXANDRE', {
+    fontSize: '26px', fontStyle: 'bold', color: '#ffd166'
+  }).setOrigin(0.5).setScrollFactor(0).setDepth(90002);
+
+  // 4. Botão Mensagem
+  const btnMsg = this.add.text(x, y, '💬 Enviar Mensagem', {
+    fontSize: '22px', color: '#ffffff', backgroundColor: '#333', padding: { x: 20, y: 10 }
+  }).setOrigin(0.5).setScrollFactor(0).setDepth(90003).setInteractive({ useHandCursor: true });
+
+  // 5. Botão Ligar
+  const btnLigar = this.add.text(x, y + 70, '📞 Ligar Diretamente', {
+    fontSize: '22px', color: '#ffffff', backgroundColor: '#333', padding: { x: 20, y: 10 }
+  }).setOrigin(0.5).setScrollFactor(0).setDepth(90003).setInteractive({ useHandCursor: true });
+
+  this.menuGroup.addMultiple([overlay, bg, titulo, btnMsg, btnLigar]);
+
+  // Funções de clique
+  btnMsg.on('pointerover', () => btnMsg.setBackgroundColor('#555'));
+  btnMsg.on('pointerout', () => btnMsg.setBackgroundColor('#333'));
+  btnMsg.on('pointerdown', () => {
+    this.menuGroup.clear(true, true);
+    this.menuContatoAtivo = false;
+    realizarContato.call(this, 'mensagem');
+  });
+
+  btnLigar.on('pointerover', () => btnLigar.setBackgroundColor('#555'));
+  btnLigar.on('pointerout', () => btnLigar.setBackgroundColor('#333'));
+  btnLigar.on('pointerdown', () => {
+    this.menuGroup.clear(true, true);
+    this.menuContatoAtivo = false;
+    realizarContato.call(this, 'ligacao');
+  });
+}
+
+function realizarContato(tipo) {
+  let falas = [];
+  if (tipo === 'mensagem') {
+    falas = [
+      { nome: 'Ana (SMS)', texto: 'Oi Alexandre! Acabei de sair do trabalho. Topa tomar um tereré agora à tarde?' },
+      { nome: 'Sistema', texto: 'Mensagem enviada com sucesso!' }
+    ];
+  } else {
+    falas = [
+      { nome: 'Ana (Ligação)', texto: 'Oi Alexandre, tudo bem? Acabei de sair aqui do serviço... Estava pensando, você quer tomar um tereré?' },
+      { nome: 'Alexandre (Telefone)', texto: 'Opa Ana! Claro, adoraria. Onde a gente se encontra?' },
+      { nome: 'Ana (Ligação)', texto: 'Pode ser lá na praça, te espero em 15 minutos!' }
+    ];
+  }
+
+  // Garantimos que o estado de diálogo seja resetado corretamente ao final
+  iniciarDialogo.call(this, falas, () => {
+    gameState.dialogoAtivo = false;
+    gameState.missaoAtual = 'encontroPraca';
+    mostrarObjetivo.call(this, "Vá para o local marcado no mapa", 4000);
+    atualizarMarcadorMissao.call(this);
+    
+    // Forçamos o player a recuperar o movimento
+    const player = getPersonagemAtivo(this);
+    if (player && player.body) {
+      player.body.moves = true;
+      this.playerEle.setVisible(true);
+      mudarCameraDePlayer(this.cameras.main, this.playerEle, this);
+      player.setVelocity(0);
+    }
+  });
 }
 
 function criarZonaSinal(scene, x, y, largura = 230, altura = 230) {
@@ -494,8 +582,19 @@ function configurarZonas() {
     }
   });
 
+  // Zona Praça (Exemplo de coordenadas, ajuste se necessário)
+  this.zonaPraca = this.add.zone(882, 798, 100, 100);
+  this.physics.world.enable(this.zonaPraca);
+  this.zonaPraca.body.setAllowGravity(false);
+
+   this.physics.add.overlap(this.playerEle, this.zonaPraca, () => {
+    if (gameState.missaoAtual === 'encontroPraca' && !gameState.dialogoAtivo) {
+      console.log('ana')
+    }
+  });
+
   // MARCA NO MAPA
-  this.debugZonaCasa = marcarZonaNoMapa(this, this.zonaTrabalhoAna, 0x00ff00);
+  this.debugZonaCasa = marcarZonaNoMapa(this, this.zonaPraca, 0x00ff00);
 
 
   // Colisões entre Personagens
@@ -521,6 +620,7 @@ function atualizarMarcadorMissao() {
   else if (gameState.missaoAtual === 'levarParaCasa') zonaAlvo = this.zonaCasa;
   else if (gameState.missaoAtual === 'enviaMensagem') zonaAlvo = this.zonaEnviarMensagem;
   else if (gameState.missaoAtual === 'irAoTrabalho') zonaAlvo = this.zonaTrabalhoAna;
+  else if (gameState.missaoAtual === 'encontroPraca') zonaAlvo = this.zonaPraca;
 
   if (!zonaAlvo) return;
 
@@ -1134,12 +1234,11 @@ function fimDoExpediente() {
         gameState.subMissao = null;
         mostrarObjetivo.call(this, "Convidar o Alexandre para tomar um teres", 4000);
         this.time.delayedCall(1000, () => {
-          gameState.dialogoAtivo = true;
           iniciarDialogo.call(this, [
             { nome: 'Ana', texto: 'Ainda bem que o expediente acabou 🙌' },
             { nome: 'Ana', texto: 'Acho que vou convidar o Alexandre para tomar um tereré' },
             { nome: 'Ana', texto: 'Só preciso conseguir sinal de telefone, aqui não está funcionando😒 ' },
-          ], gameState.dialogoAtivo = false);
+          ], () => { gameState.dialogoAtivo = false; });
         });
       }
     });
@@ -1177,6 +1276,14 @@ function pularescola() {
   this.cameras.main.startFollow(this.playerEle);
 
 
+}
+
+function enviarMensagemAlexandre() {
+  gameState.missaoAtual = 'EnviarMensagemAlexandre';
+  gameState.subMissao = null;
+  gameState.personagemAtual = 'ela';
+  this.cameras.main.startFollow(this.playerEla);
+  this.playerEla.setPosition(882, 798);
 }
 
 // --- 6. MOVIMENTAÇÃO E ANIMAÇÕES ---
