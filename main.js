@@ -281,133 +281,6 @@ function inicializarHudSinal(scene) {
   }).setOrigin(1, 0).setScrollFactor(0).setDepth(10000).setVisible(false);
 }
 
-function atualizarStatusSinal(scene) {
-  const player = getPersonagemAtivo(scene);
-  let temSinalAgora = false;
-
-  scene.zonasSinal.forEach(zona => {
-    if (scene.physics.overlap(player, zona)) temSinalAgora = true;
-  });
-
-  gameState.sinalAtivo = temSinalAgora;
-
-  if (temSinalAgora) {
-    scene.hudSinal.setText('📶 Sinal').setColor('#00ff00');
-    // Se a personagem atual for 'ela' e houver mensagem pendente, notifica
-    if (gameState.temMensagemPendente && gameState.personagemAtual === 'ela') {
-      scene.notificacaoMsg.setVisible(true);
-      verificarMensagemMissao.call(scene);
-    }
-
-    // Lógica para o menu de contato após o trabalho
-    if (gameState.missaoAtual === 'EnviarMensagemAlexandre' && !gameState.dialogoAtivo && !scene.menuContatoAtivo) {
-      abrirMenuContato.call(scene);
-    }
-  } else {
-    scene.hudSinal.setText('❌ Sem sinal').setColor('#ff4d4d');
-    scene.notificacaoMsg.setVisible(false);
-  }
-}
-
-function abrirMenuContato() {
-  if (this.menuContatoAtivo) return;
-  this.menuContatoAtivo = true;
-  gameState.dialogoAtivo = true;
-  pararPersonagens.call(this);
-
-  const x = this.cameras.main.centerX;
-  const y = this.cameras.main.centerY;
-
-  // Criamos um grupo para facilitar a limpeza posterior
-  this.menuGroup = this.add.group();
-
-  // 1. Fundo que bloqueia cliques em qualquer outra coisa (Overlay)
-  const overlay = this.add.rectangle(0, 0, this.scale.width, this.scale.height, 0x000000, 0.7)
-    .setOrigin(0).setScrollFactor(0).setDepth(90000).setInteractive();
-
-  // 2. Fundo do Menu
-  const bg = this.add.graphics().setScrollFactor(0).setDepth(90001);
-  bg.fillStyle(0x000000, 1);
-  bg.fillRoundedRect(x - 200, y - 110, 400, 220, 15);
-  bg.lineStyle(4, 0xffffff, 1);
-  bg.strokeRoundedRect(x - 200, y - 110, 400, 220, 15);
-
-  // 3. Título
-  const titulo = this.add.text(x, y - 70, 'CONTATAR ALEXANDRE', {
-    fontSize: '26px', fontStyle: 'bold', color: '#ffd166'
-  }).setOrigin(0.5).setScrollFactor(0).setDepth(90002);
-
-  // 4. Botão Mensagem
-  const btnMsg = this.add.text(x, y, '💬 Enviar Mensagem', {
-    fontSize: '22px', color: '#ffffff', backgroundColor: '#333', padding: { x: 20, y: 10 }
-  }).setOrigin(0.5).setScrollFactor(0).setDepth(90003).setInteractive({ useHandCursor: true });
-
-  // 5. Botão Ligar
-  const btnLigar = this.add.text(x, y + 70, '📞 Ligar Diretamente', {
-    fontSize: '22px', color: '#ffffff', backgroundColor: '#333', padding: { x: 20, y: 10 }
-  }).setOrigin(0.5).setScrollFactor(0).setDepth(90003).setInteractive({ useHandCursor: true });
-
-  this.menuGroup.addMultiple([overlay, bg, titulo, btnMsg, btnLigar]);
-
-  // Funções de clique
-  btnMsg.on('pointerover', () => btnMsg.setBackgroundColor('#555'));
-  btnMsg.on('pointerout', () => btnMsg.setBackgroundColor('#333'));
-  btnMsg.on('pointerdown', () => {
-    this.menuGroup.clear(true, true);
-    this.menuContatoAtivo = false;
-    realizarContato.call(this, 'mensagem');
-  });
-
-  btnLigar.on('pointerover', () => btnLigar.setBackgroundColor('#555'));
-  btnLigar.on('pointerout', () => btnLigar.setBackgroundColor('#333'));
-  btnLigar.on('pointerdown', () => {
-    this.menuGroup.clear(true, true);
-    this.menuContatoAtivo = false;
-    realizarContato.call(this, 'ligacao');
-  });
-}
-
-function realizarContato(tipo) {
-  let falas = [];
-  if (tipo === 'mensagem') {
-    falas = [
-      { nome: 'Ana (SMS)', texto: 'Oi Alexandre! Acabei de sair do trabalho. Topa tomar um tereré agora à tarde?' },
-      { nome: 'Sistema', texto: 'Mensagem enviada com sucesso!' }
-    ];
-  } else {
-    falas = [
-      { nome: 'Ana (Ligação)', texto: 'Oi Alexandre, tudo bem? Acabei de sair aqui do serviço... Estava pensando, você quer tomar um tereré?' },
-      { nome: 'Alexandre (Telefone)', texto: 'Opa Ana! Claro, adoraria. Onde a gente se encontra?' },
-      { nome: 'Ana (Ligação)', texto: 'Pode ser lá na praça, te espero em 15 minutos!' }
-    ];
-  }
-
-  // Garantimos que o estado de diálogo seja resetado corretamente ao final
-  iniciarDialogo.call(this, falas, () => {
-    gameState.dialogoAtivo = false;
-    gameState.missaoAtual = 'encontroPraca';
-    gameState.subMissao = 'elaVai'
-    mostrarObjetivo.call(this, "Vá para o local marcado no mapa", 4000);
-    atualizarMarcadorMissao.call(this);
-    
-    // Forçamos o player a recuperar o movimento
-    const player = getPersonagemAtivo(this);
-    if (player && player.body) {
-      player.body.moves = true;
-      player.setVelocity(0);
-    }
-  });
-}
-
-function mudarparaAlexandreEncontroPraca(){
-      pararPersonagens.call(this);
-      this.playerEla.body.moves = false;
-      gameState.subMissao = 'eleVai';
-      this.playerEle.setVisible(true);
-      mudarCameraDePlayer(this.cameras.main, this.playerEle, this);
-
-}
-
 function criarZonaSinal(scene, x, y, largura = 230, altura = 230) {
   const zona = scene.add.zone(x, y, largura, altura);
   scene.physics.world.enable(zona);
@@ -591,17 +464,17 @@ function configurarZonas() {
   });
 
   // Zona Praça (Exemplo de coordenadas, ajuste se necessário)
-  this.zonaPraca = this.add.zone(882, 798, 100, 100);
+  this.zonaPraca = this.add.zone(882, 798, 20, 20);
   this.physics.world.enable(this.zonaPraca);
   this.zonaPraca.body.setAllowGravity(false);
 
-   this.physics.add.overlap(this.playerEla, this.zonaPraca, () => {
+  this.physics.add.overlap(this.playerEla, this.zonaPraca, () => {
     if (gameState.missaoAtual === 'encontroPraca' && gameState.subMissao === 'elaVai' && !gameState.dialogoAtivo) {
       mudarparaAlexandreEncontroPraca.call(this);
     }
   });
 
-   this.physics.add.overlap(this.playerEle, this.zonaPraca, () => {
+  this.physics.add.overlap(this.playerEle, this.zonaPraca, () => {
     if (gameState.missaoAtual === 'encontroPraca' && gameState.subMissao === 'eleVai' && !gameState.dialogoAtivo) {
       console.log('Alexandre no local')
     }
@@ -1257,6 +1130,179 @@ function fimDoExpediente() {
       }
     });
   });
+
+}
+
+function atualizarStatusSinal(scene) {
+  const player = getPersonagemAtivo(scene);
+  let temSinalAgora = false;
+
+  scene.zonasSinal.forEach(zona => {
+    if (scene.physics.overlap(player, zona)) temSinalAgora = true;
+  });
+
+  gameState.sinalAtivo = temSinalAgora;
+
+  if (temSinalAgora) {
+    scene.hudSinal.setText('📶 Sinal').setColor('#00ff00');
+    // Se a personagem atual for 'ela' e houver mensagem pendente, notifica
+    if (gameState.temMensagemPendente && gameState.personagemAtual === 'ela') {
+      scene.notificacaoMsg.setVisible(true);
+      verificarMensagemMissao.call(scene);
+    }
+
+    // Lógica para o menu de contato após o trabalho
+    if (gameState.missaoAtual === 'EnviarMensagemAlexandre' && !gameState.dialogoAtivo && !scene.menuContatoAtivo) {
+      abrirMenuContato.call(scene);
+    }
+  } else {
+    scene.hudSinal.setText('❌ Sem sinal').setColor('#ff4d4d');
+    scene.notificacaoMsg.setVisible(false);
+  }
+}
+
+function abrirMenuContato() {
+  if (this.menuContatoAtivo) return;
+  this.menuContatoAtivo = true;
+  gameState.dialogoAtivo = true;
+  pararPersonagens.call(this);
+
+  const x = this.cameras.main.centerX;
+  const y = this.cameras.main.centerY;
+
+  // Criamos um grupo para facilitar a limpeza posterior
+  this.menuGroup = this.add.group();
+
+  // 1. Fundo que bloqueia cliques em qualquer outra coisa (Overlay)
+  const overlay = this.add.rectangle(0, 0, this.scale.width, this.scale.height, 0x000000, 0.7)
+    .setOrigin(0).setScrollFactor(0).setDepth(90000).setInteractive();
+
+  // 2. Fundo do Menu
+  const bg = this.add.graphics().setScrollFactor(0).setDepth(90001);
+  bg.fillStyle(0x000000, 1);
+  bg.fillRoundedRect(x - 200, y - 110, 400, 220, 15);
+  bg.lineStyle(4, 0xffffff, 1);
+  bg.strokeRoundedRect(x - 200, y - 110, 400, 220, 15);
+
+  // 3. Título
+  const titulo = this.add.text(x, y - 70, 'CONTATAR ALEXANDRE', {
+    fontSize: '26px', fontStyle: 'bold', color: '#ffd166'
+  }).setOrigin(0.5).setScrollFactor(0).setDepth(90002);
+
+  // 4. Botão Mensagem
+  const btnMsg = this.add.text(x, y, '💬 Enviar Mensagem', {
+    fontSize: '22px', color: '#ffffff', backgroundColor: '#333', padding: { x: 20, y: 10 }
+  }).setOrigin(0.5).setScrollFactor(0).setDepth(90003).setInteractive({ useHandCursor: true });
+
+  // 5. Botão Ligar
+  const btnLigar = this.add.text(x, y + 70, '📞 Ligar Diretamente', {
+    fontSize: '22px', color: '#ffffff', backgroundColor: '#333', padding: { x: 20, y: 10 }
+  }).setOrigin(0.5).setScrollFactor(0).setDepth(90003).setInteractive({ useHandCursor: true });
+
+  this.menuGroup.addMultiple([overlay, bg, titulo, btnMsg, btnLigar]);
+
+  // Funções de clique
+  btnMsg.on('pointerover', () => btnMsg.setBackgroundColor('#555'));
+  btnMsg.on('pointerout', () => btnMsg.setBackgroundColor('#333'));
+  btnMsg.on('pointerdown', () => {
+    this.menuGroup.clear(true, true);
+    this.menuContatoAtivo = false;
+    realizarContato.call(this, 'mensagem');
+  });
+
+  btnLigar.on('pointerover', () => btnLigar.setBackgroundColor('#555'));
+  btnLigar.on('pointerout', () => btnLigar.setBackgroundColor('#333'));
+  btnLigar.on('pointerdown', () => {
+    this.menuGroup.clear(true, true);
+    this.menuContatoAtivo = false;
+    realizarContato.call(this, 'ligacao');
+  });
+}
+
+function realizarContato(tipo) {
+  let falas = [];
+  if (tipo === 'mensagem') {
+    falas = [
+      { nome: 'Ana (SMS)', texto: 'Oi Alexandre! Acabei de sair do trabalho. Topa tomar um tereré agora à tarde?' },
+      { nome: 'Sistema', texto: 'Mensagem enviada com sucesso!' }
+    ];
+  } else {
+    falas = [
+      { nome: 'Ana (Ligação)', texto: '📞 Chamando…' },
+      { nome: 'Alexandre (Ligação)', texto: 'Oi, Ana!' },
+      { nome: 'Ana (Ligação)', texto: 'Oi, Alexandre! Tudo bem? Acabei de sair do serviço e pensei em você… topa tomar um tereré?' },
+      { nome: 'Alexandre (Ligação)', texto: 'Opa, Ana! Claro que topo 😄 Onde a gente se encontra?' },
+      { nome: 'Ana (Ligação)', texto: 'Vamos na praça? Te espero lá em 15 minutos.' }
+    ];
+  }
+
+  if(tipo === 'mensagem'){
+     iniciarDialogo.call(this, falas, () => {
+      gameState.dialogoAtivo = false;
+      aguardarMensagemDeConfirmacao.call(this)
+    });
+
+
+  }else {
+
+    // Garantimos que o estado de diálogo seja resetado corretamente ao final
+    iniciarDialogo.call(this, falas, () => {
+      gameState.dialogoAtivo = false;
+      gameState.missaoAtual = 'encontroPraca';
+      gameState.subMissao = 'elaVai'
+      mostrarObjetivo.call(this, "Vá para o local marcado", 4000);
+      atualizarMarcadorMissao.call(this);
+
+      // Forçamos o player a recuperar o movimento
+      const player = getPersonagemAtivo(this);
+      if (player && player.body) {
+        player.body.moves = true;
+        player.setVelocity(0);
+      }
+    });
+
+  }
+
+}
+
+function aguardarMensagemDeConfirmacao(){
+
+     
+      gameState.missaoAtual = 'encontroPraca';
+
+      this.time.delayedCall(1000, () => {
+          mostrarObjetivo.call(this, "📩 Nova Mensagem!", 4000);
+          iniciarDialogo.call(this, [
+             { nome: 'Celular📱', texto: '💌 Nova mensagem de Alexandre: ""Oi, Ana! Claro que topo 😄 Te encontro na praça em 20 minutos."" '}
+            ], () => { 
+              gameState.dialogoAtivo = false; 
+              mensagemRecebidaDeConfirmalcao.call(this);
+              });
+        });
+
+  
+}
+
+function mensagemRecebidaDeConfirmalcao(){
+      gameState.dialogoAtivo = false;
+      gameState.missaoAtual = 'encontroPraca';
+      gameState.subMissao = 'elaVai'
+      mostrarObjetivo.call(this, "Vá para o local marcado", 4000);
+      atualizarMarcadorMissao.call(this);
+      // Forçamos o player a recuperar o movimento
+      const player = getPersonagemAtivo(this);
+      if (player && player.body) {
+        player.body.moves = true;
+        player.setVelocity(0);
+      }
+}
+
+function mudarparaAlexandreEncontroPraca() {
+  pararPersonagens.call(this);
+  this.playerEla.body.moves = false;
+  gameState.subMissao = 'eleVai';
+  this.playerEle.setVisible(true);
+  mudarCameraDePlayer(this.cameras.main, this.playerEle, this);
 
 }
 
