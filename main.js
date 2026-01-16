@@ -92,7 +92,7 @@ function create() {
   this.input.keyboard.on('keydown-FOUR', () => pularParaCasa.call(this));
   this.input.keyboard.on('keydown-FIVE', () => pularescola.call(this));
   this.input.keyboard.on('keydown-SIX', () => enviarMensagemAlexandre.call(this));
-
+  this.input.keyboard.on('keydown-SEVEN', () => encontroPracaterere.call(this));
   // 2. Configuração do Mapa (APENAS UMA VEZ)
   const map = this.make.tilemap({ key: 'mapa' });
   const tileset = map.addTilesetImage(map.tilesets[0].name, 'tiles');
@@ -215,7 +215,7 @@ function update() {
   if (gameState.dialogoAtivo) return;
 
   // 3. Lógica de Seguimento
-  const missoesDeSeguir = ['levarParaCasa', 'irPizzaria', 'elaSegueEle'];
+  const missoesDeSeguir = ['levarParaCasa', 'irPizzaria', 'elaSegueEle', 'levarParaCasaSegundoEncontro'];
 
   if (npc && (missoesDeSeguir.includes(gameState.missaoAtual) || missoesDeSeguir.includes(gameState.subMissao))) {
     const distancia = Phaser.Math.Distance.Between(npc.x, npc.y, player.x, player.y);
@@ -464,7 +464,7 @@ function configurarZonas() {
   });
 
   // Zona Praça (Exemplo de coordenadas, ajuste se necessário)
-  this.zonaPraca = this.add.zone(882, 798, 20, 20);
+  this.zonaPraca = this.add.zone(762, 1010, 20, 20);
   this.physics.world.enable(this.zonaPraca);
   this.zonaPraca.body.setAllowGravity(false);
 
@@ -476,7 +476,7 @@ function configurarZonas() {
 
   this.physics.add.overlap(this.playerEle, this.zonaPraca, () => {
     if (gameState.missaoAtual === 'encontroPraca' && gameState.subMissao === 'eleVai' && !gameState.dialogoAtivo) {
-      console.log('Alexandre no local')
+      iniciarSegundoEncontro.call(this)
     }
   });
 
@@ -1301,11 +1301,101 @@ function mudarparaAlexandreEncontroPraca() {
   pararPersonagens.call(this);
   this.playerEla.body.moves = false;
   gameState.subMissao = 'eleVai';
+  mostrarObjetivo.call(this, "A Paula esta te esperando na praça.", 4000);
   this.playerEle.setVisible(true);
   mudarCameraDePlayer(this.cameras.main, this.playerEle, this);
 
 }
 
+function iniciarSegundoEncontro(){
+
+  gameState.dialogoAtivo = true;
+  pararPersonagens.call(this);
+  this.playerEla.body.moves = false;
+  this.playerEle.body.moves = false;
+  gameState.subMissao = null;
+  gameState.missaoAtual = null;
+  atualizarMarcadorMissao.call(this);
+  olharUmParaOutro.call(this, getPersonagemAtivo(this), getNpc(this));
+  
+  this.playerEla.setPosition(788, 1004);
+  this.playerEle.setPosition(816, 1004);
+
+  forcarDirecao(this.playerEle, 'ele', 'left');
+  forcarDirecao(this.playerEla, 'ela', 'right');
+
+
+  iniciarDialogo.call(this,
+  [{ nome: 'Alexandre', texto: 'Oi… nada melhor que um tereré pra refrescar depois do dia, né?' },
+  { nome: 'Ana', texto: 'Nossa, sim! Essa praça é bem tranquila…' },
+
+  { nome: 'Alexandre', texto: 'Como foi seu trabalho hoje?' },
+  { nome: 'Ana', texto: 'Muita correria. Tem dias que dá vontade de sair correndo, rsrs.' },
+
+  { nome: 'Alexandre', texto: 'Imagino.' },
+  { nome: 'Ana', texto: 'Ainda bem que hoje foi só até meio-dia, dá pra curtir o final do dia tranquila.' },
+
+  { nome: 'Alexandre', texto: 'Espero que curta mesmo, porque eu estava bem ansioso pra te ver de novo, rsrs.' },
+  { nome: 'Ana', texto: 'Sério? Você nem mandou mensagem hoje… recebi a de ontem e achei que ia falar comigo hoje, rsrs.' },
+
+  { nome: 'Alexandre', texto: 'Pensei em mandar, mas estava esperando você responder. Fiquei feliz quando você me chamou pra sair de novo hoje.' },
+  { nome: 'Ana', texto: 'Que bom! Eu não ia fazer nada de importante mesmo, kkkkk. Brincadeira!' },
+
+  { nome: 'Alexandre', texto: 'Agora não sei se fico triste ou feliz com isso, kkkkk.' },
+  { nome: 'Alexandre', texto: 'Mas falando sério… gostei bastante de você. Acho que nunca conheci alguém assim.' },
+
+  { nome: 'Ana', texto: 'Nossa, como você é rápido… direto ao ponto assim.' },
+  { nome: 'Ana', texto: 'Vai me dizer que em Goiânia não tinha meninas legais também?' },
+
+  { nome: 'Alexandre', texto: 'Igual a você, não. Não sei explicar, mas quando te vi na escola senti algo diferente.' },
+  { nome: 'Alexandre', texto: 'Nãosei explicar.'},
+
+  { nome: 'Ana', texto: 'Humm… sei. Aposto que você fala isso pra todas, rsrs.' },
+  { nome: 'Ana', texto: 'Fiquei sabendo que já tinha uma menina interessada em você.' },
+
+  { nome: 'Alexandre', texto: 'Quem? A Daiane?' },
+  { nome: 'Ana', texto: 'Tá vendo? Lembra até o nome dela.' },
+
+  { nome: 'Alexandre', texto: 'Ela até falou comigo, mas sabe que não tenho nenhum interesse. Já deixei claro, rsrs.' },
+  { nome: 'Ana', texto: 'Vou fingir que acredito.' },
+
+  { nome: 'Alexandre', texto: 'E você? Como anda sua vida amorosa? rsrs.' },
+  { nome: 'Ana', texto: 'Meio complicada… eu estava namorando, mas estamos dando um tempo.' },
+
+  { nome: 'Alexandre', texto: 'Vixi… não quero atrapalhar nada, viu?' },
+  { nome: 'Ana', texto: 'Nada. Acho que já deu o que tinha que dar. Ele nem mora aqui, era namoro à distância.' },
+
+  { nome: 'Alexandre', texto: 'Então só espero que você faça o que for melhor pra você.' },
+  { nome: 'Ana', texto: 'Eu também.' },
+
+  { nome: 'Alexandre', texto: 'Já está ficando tarde…' },
+  { nome: 'Ana', texto: 'Verdade. Meus pais vão estranhar se eu demorar muito.' },
+
+  { nome: 'Alexandre', texto: 'Então vamos fazer assim… segunda-feira, depois da aula, a gente se encontra de novo?' },
+  { nome: 'Ana', texto: 'À noite?' },
+
+  { nome: 'Alexandre', texto: 'À noite. A gente sai pra comer um lanche.' },
+  { nome: 'Ana', texto: 'Então combinado.' },
+
+  { nome: 'Alexandre', texto: 'Vamos, eu te acompanho até em casa.' },
+  { nome: 'Ana', texto: 'Meus pais vão estranhar você me levando de novo… ontem já perguntaram de você, rsrs.' },
+
+  { nome: 'Alexandre', texto: 'Então é melhor eu ir me preparando pra conhecer meu futuro sogro e minha futura sogra.' },
+  { nome: 'Ana', texto: 'kkkkkkk' },
+  { nome: 'Ana', texto: 'Então vamos.' },
+], () => {  
+        
+        gameState.love += 10;
+        atualizarHud.call(this);
+        gameState.dialogoAtivo = false;
+        this.playerEla.body.moves = true;
+        this.playerEle.body.moves = true;
+        mudarCameraDePlayer(this.cameras.main, this.playerEla, this);
+        gameState.missaoAtual = 'levarParaCasaSegundoEncontro';
+
+  });
+
+}
 
 // Atalhos de DEV
 function pularParaConversa() {
@@ -1344,6 +1434,12 @@ function enviarMensagemAlexandre() {
   gameState.personagemAtual = 'ela';
   this.cameras.main.startFollow(this.playerEla);
   this.playerEla.setPosition(882, 798);
+}
+
+function encontroPracaterere() {
+ 
+ 
+
 }
 
 // --- 6. MOVIMENTAÇÃO E ANIMAÇÕES ---
