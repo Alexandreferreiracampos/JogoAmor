@@ -532,12 +532,33 @@ function marcarZonaNoMapa(scene, zona, cor = 0xff0000) {
   return g;
 }
 
+function mudarCameraDePlayer(camera, target, scene) {
+
+  gameState.personagemAtual = target === scene.playerEle ? 'ele' : 'ela';
+  camera.stopFollow();
+
+  scene.tweens.add({
+    targets: camera,
+    scrollX: target.x - camera.width / 2,
+    scrollY: target.y - camera.height / 2,
+    duration: 700,
+    ease: 'Sine.easeInOut',
+    onComplete: () => {
+      camera.startFollow(target, true, 0.06, 0.06);
+      target.body.moves = true;
+      target.setVisible(true);
+    }
+  });
+}
+
+
 function trocarParaEle() {
-  gameState.personagemAtual = 'ele';
+  
   gameState.missaoAtual = 'conhecer';
   this.playerEla.body.moves = false;
+  this.playerEle.body.moves = false;
   pararPersonagens.call(this);
-  this.cameras.main.startFollow(this.playerEle);
+  mudarCameraDePlayer(this.cameras.main, this.playerEle, this);
   mostrarObjetivo.call(this, "Vá falar com a Ana", 2500);
   atualizarMarcadorMissao.call(this);
 }
@@ -575,8 +596,6 @@ function iniciarEncontro() {
 function iniciarMissaoSala() {
   gameState.missaoAtual = 'irParaSala';
   gameState.subMissao = 'eleVai';
-  gameState.personagemAtual = 'ele';
-  this.cameras.main.startFollow(this.playerEle);
   atualizarMarcadorMissao.call(this);
   mostrarObjetivo.call(this, "O Sinal já bateu, vai para sala de aula", 3000);
 }
@@ -586,9 +605,7 @@ function eleChegouNaSala() {
   this.playerEle.setVelocity(0);
   this.playerEle.anims.stop();
   this.playerEle.setVisible(false);
-  this.playerEla.body.moves = true;
-  gameState.personagemAtual = 'ela';
-  this.cameras.main.startFollow(this.playerEla);
+  mudarCameraDePlayer(this.cameras.main, this.playerEla, this);
 }
 
 function ambosNaSala() {
@@ -607,8 +624,7 @@ function mostrarRelogioAnimado() {
   this.playerEla.setPosition(2964, 734);
   this.playerEle.setPosition(2932, 340);
   this.playerEle.setVisible(true);
-  gameState.personagemAtual = 'ele';
-  this.cameras.main.startFollow(this.playerEle);
+  mudarCameraDePlayer(this.cameras.main, this.playerEle, this);
 
   const overlay = this.add.rectangle(0, 0, this.scale.width, this.scale.height, 0x000000)
     .setOrigin(0).setScrollFactor(0).setDepth(9000).setAlpha(1);
@@ -677,9 +693,7 @@ function iniciarConvitePizza() {
 function iniciarMissaoPizzaria() {
   gameState.missaoAtual = 'irPizzaria';
   gameState.subMissao = 'elaSegueEle';
-  gameState.personagemAtual = 'ele';
-  this.cameras.main.startFollow(this.playerEle);
-  this.playerEle.body.moves = true;
+  mudarCameraDePlayer(this.cameras.main, this.playerEle, this);
   atualizarMarcadorMissao.call(this);
   mostrarObjetivo.call(this, "Vá até a pizzaria do Paulo", 2000);
 }
@@ -716,8 +730,7 @@ function finalizarPizza() {
 function mostrarTextoTempo() {
   this.playerEla.setPosition(2342, 682);
   this.playerEle.setPosition(2384, 682);
-  gameState.personagemAtual = 'ela';
-  this.cameras.main.startFollow(this.playerEla);
+  mudarCameraDePlayer(this.cameras.main, this.playerEla, this);
 
   const overlay = this.add.rectangle(0, 0, this.scale.width, this.scale.height, 0x000000)
     .setOrigin(0).setScrollFactor(0).setDepth(9000).setAlpha(1);
@@ -771,8 +784,7 @@ function iniciarMissaoCasa() {
   gameState.missaoAtual = 'levarParaCasa';
   atualizarMarcadorMissao.call(this);
   gameState.subMissao = null;
-  gameState.personagemAtual = 'ela';
-  this.cameras.main.startFollow(this.playerEla);
+  mudarCameraDePlayer(this.cameras.main, this.playerEla, this);
   mostrarObjetivo.call(this, "Volte para a casa.", 3000);
 }
 
@@ -879,8 +891,8 @@ function escolherIrEmbora() {
 
 function escolherTelefone() {
   gameState.dialogoAtivo = true;
-  gameState.personagemAtual = 'ele';
-  this.cameras.main.startFollow(this.playerEle);
+  mudarCameraDePlayer(this.cameras.main, this.playerEle, this);
+  this.playerEle.body.enable = false;
 
   iniciarDialogo.call(this, [
     { nome: 'Alexandre', texto: 'Gostei muito de te conhecer… será que eu poderia anotar seu telefone?' },
@@ -928,6 +940,9 @@ function moverPlayer({ personagem, tipo, x, y, onFinish }) {
         onComplete: () => {
           personagem.anims.stop();
           personagem.setVisible(false);
+          this.playerEle.body.enable = true;
+          personagem.body.enable = true;
+
           if (onFinish) onFinish();
         }
       });
@@ -937,8 +952,7 @@ function moverPlayer({ personagem, tipo, x, y, onFinish }) {
 
 function enviarmensagemparaana() {
   gameState.missaoAtual = 'enviaMensagem';
-  gameState.personagemAtual = 'ele';
-  this.cameras.main.startFollow(this.playerEle);
+  mudarCameraDePlayer(this.cameras.main, this.playerEle, this);
   atualizarMarcadorMissao.call(this);
   mostrarObjetivo.call(this, "Vá até um local com sinal para enviar a mensagem", 3000);
 }
@@ -947,6 +961,7 @@ function enviarMensagemAna() {
   if (gameState.missaoAtual === 'enviaMensagem' && gameState.sinalAtivo) {
     // 1. Para o movimento do player imediatamente
     pararPersonagens.call(this);
+    this.playerEle.body.moves = false;    
     
     // 2. Envia a mensagem (isso seta temMensagemPendente = true)
     enviarMensagem.call(this, "Oi Ana, já cheguei em casa! Obrigada por hoje.", "Alexandre");
@@ -958,11 +973,10 @@ function enviarMensagemAna() {
 
     // 4. Troca para a personagem 'ela' e a torna visível
     this.time.delayedCall(1000, () => {
-      gameState.personagemAtual = 'ela';
-      this.playerEla.setVisible(true);
-      this.playerEla.body.enable = true;
-      this.cameras.main.startFollow(this.playerEla);
+      this.playerEle.body.moves = true;
+      mudarCameraDePlayer(this.cameras.main, this.playerEla, this);
       mostrarObjetivo.call(this, "Ana, procure sinal para ler a mensagem", 4000);
+      this.playerEle.setVisible(false);
     });
   }
 }
