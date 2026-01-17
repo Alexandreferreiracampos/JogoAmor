@@ -85,7 +85,21 @@ const FRAMES = {
     left: [0, 4, 8],
     right: [3, 7, 11],
     up: [2, 6, 10],
-    idle: 2
+    idle: 1
+  },
+  npc1: {
+    down: [13, 17, 21],
+    left: [12, 16, 20],
+    right: [15, 19, 23],
+    up: [14, 18, 22],
+    idle: 13
+  },
+  npc2: {
+    down: [49, 53, 57],
+    left: [48, 52, 56],
+    right: [51, 55, 59],
+    up: [50, 54, 58],
+    idle: 49
   }
 };
 
@@ -135,6 +149,16 @@ function preload() {
     frameHeight: 32
   });
 
+  this.load.spritesheet('npcP1', 'assets/personagem.png', {
+    frameWidth: 32,
+    frameHeight: 32
+  });
+
+  this.load.spritesheet('npcP2', 'assets/personagem.png', {
+    frameWidth: 32,
+    frameHeight: 32
+  });
+
 }
 
 function create() {
@@ -164,14 +188,24 @@ function create() {
   this.cameras.main.setBackgroundColor('#84C669');
 
   // 5. Inicialização dos Jogadores
-  this.playerEla = this.physics.add.sprite(270, 1820, 'playerEla', FRAMES.ela.idle);
+  this.playerEla = this.physics.add.sprite(1488, 496, 'playerEla', FRAMES.ela.idle);
   this.playerEle = this.physics.add.sprite(2982, 580, 'playerEle', FRAMES.ele.idle);
+
+   // 5. Inicialização dos npc
+  this.npcP1 = this.physics.add.sprite(1488, 496, 'npcP1', FRAMES.npc1.idle);
+  this.npcP2 = this.physics.add.sprite(2982, 580, 'npcP2', FRAMES.npc2.idle);
 
   this.playerEla.setCollideWorldBounds(true);
   this.playerEle.setCollideWorldBounds(true);
 
+  this.npcP1.setCollideWorldBounds(true);
+  this.npcP2.setCollideWorldBounds(true);
+
   this.physics.add.collider(this.playerEla, layer);
   this.physics.add.collider(this.playerEle, layer);
+
+  this.physics.add.collider(this.npcP1, layer);
+  this.physics.add.collider(this.npcP2, layer);
 
   criarAnimacoes(this);
 
@@ -548,7 +582,7 @@ function configurarZonas() {
   });
 
   // Zona Alemao
-  this.zonaAlemao = this.add.zone(1726, 688, 40, 20);
+  this.zonaAlemao = this.add.zone(1361, 550, 80, 80);
   this.physics.world.enable(this.zonaAlemao);
   this.zonaAlemao.body.setAllowGravity(false);
 
@@ -1753,10 +1787,19 @@ function terceiroEncontro(){
 
 function iniciarDialogoAlemao(){
   pararPersonagens.call(this);
-  this.playerEle.setPosition(1743, 716);
-  this.playerEla.setPosition(1713, 716);
-  forcarDirecao(this.playerEle, 'ele', 'left');
-  forcarDirecao(this.playerEla, 'ela', 'right');
+
+  this.playerEla.setPosition(1380, 560);
+  this.playerEle.setPosition(1339, 560);
+
+  this.npcP1.setPosition(1520, 566);
+  this.npcP2.setPosition(1616, 566);
+
+  forcarDirecao(this.playerEle, 'ele', 'right');
+  forcarDirecao(this.playerEla, 'ela', 'left');
+
+  forcarDirecao(this.npcP1, 'npc1', 'right');
+  forcarDirecao(this.npcP2, 'npc2', 'left');
+
   olharUmParaOutro.call(this, getPersonagemAtivo(this), getNpc(this));
   this.playerEla.body.moves= false;
   this.playerEle.body.moves = false;
@@ -1832,21 +1875,33 @@ function encontroPracaterere() {
       this.playerEla.body.moves = true;
       this.playerEle.body.moves = true;
       mudarParaNoite(this, 2000)
-      this.playerEla.setPosition(548, 1706);
-      this.playerEle.setPosition(548, 1706);
+      this.playerEla.setPosition(1471, 624);
+      this.playerEle.setPosition(1471, 624);
       mudarCameraDePlayer(this.cameras.main, this.playerEla, this);
-      gameState.missaoAtual = 'levarParaCasaSegundoEncontro';
-      mostrarObjetivo.call(this, "Voltar para casa 🏡", 4000);
-      atualizarMarcadorMissao.call(this);
+     // gameState.missaoAtual = 'levarParaCasaSegundoEncontro';
+      //mostrarObjetivo.call(this, "Voltar para casa 🏡", 4000);
+      //atualizarMarcadorMissao.call(this);
+      gameState.missaoAtual = 'irLanchoneteAlemao';
+  gameState.subMissao = 'beijala';
+  mostrarObjetivo.call(this, "Ir até a lanchonete do Alemão", 4000);
+  atualizarMarcadorMissao.call(this);
 }
 
 
 // --- 6. MOVIMENTAÇÃO E ANIMAÇÕES ---
 
 function criarAnimacoes(scene) {
-  const tipos = ['ela', 'ele'];
+  // Adicione 'npc1' e 'npc2' na lista de tipos
+  const tipos = ['ela', 'ele', 'npc1', 'npc2']; 
+  
   tipos.forEach(tipo => {
-    const spriteKey = tipo === 'ela' ? 'playerEla' : 'playerEle';
+    // Define qual sprite usar para cada tipo
+    let spriteKey;
+    if (tipo === 'ela') spriteKey = 'playerEla';
+    else if (tipo === 'ele') spriteKey = 'playerEle';
+    else if (tipo === 'npc1') spriteKey = 'npcP1';
+    else if (tipo === 'npc2') spriteKey = 'npcP2';
+
     ['down', 'left', 'right', 'up'].forEach(dir => {
       scene.anims.create({
         key: `${tipo}-${dir}`,
