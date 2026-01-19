@@ -23,7 +23,7 @@ class TelaInicial extends Phaser.Scene {
       fontFamily: 'monospace'
     }).setOrigin(0.5);
 
-     this.add.text(width / 2, height / 2 - 50, 'Posto Norte - 2012', {
+    this.add.text(width / 2, height / 2 - 50, 'Posto Norte - 2012', {
       fontSize: '42px',
       fontStyle: 'bold',
       color: '#ffffff',
@@ -38,8 +38,8 @@ class TelaInicial extends Phaser.Scene {
       padding: { x: 20, y: 10 },
       fontFamily: 'monospace'
     })
-    .setOrigin(0.5)
-    .setInteractive({ useHandCursor: true });
+      .setOrigin(0.5)
+      .setInteractive({ useHandCursor: true });
 
     // Efeito de hover (passar o mouse)
     botao.on('pointerover', () => botao.setStyle({ color: '#ffffff' }));
@@ -69,7 +69,7 @@ const config = {
       debug: false
     }
   },
-   scene: [TelaInicial, { key: 'CenaJogo', preload, create, update }]
+  scene: [TelaInicial, { key: 'CenaJogo', preload, create, update }]
 };
 
 const FRAMES = {
@@ -176,6 +176,7 @@ function create() {
   this.input.keyboard.on('keydown-FIVE', () => pularescola.call(this));
   this.input.keyboard.on('keydown-SIX', () => enviarMensagemAlexandre.call(this));
   this.input.keyboard.on('keydown-SEVEN', () => encontroPracaterere.call(this));
+  this.input.keyboard.on('keydown-EIGHT', () => dialogoAlemao.call(this));
   // 2. Configuração do Mapa (APENAS UMA VEZ)
   const map = this.make.tilemap({ key: 'mapa' });
   const tileset = map.addTilesetImage(map.tilesets[0].name, 'tiles');
@@ -191,7 +192,7 @@ function create() {
   this.playerEla = this.physics.add.sprite(1488, 496, 'playerEla', FRAMES.ela.idle);
   this.playerEle = this.physics.add.sprite(2982, 580, 'playerEle', FRAMES.ele.idle);
 
-   // 5. Inicialização dos npc
+  // 5. Inicialização dos npc
   this.npcP1 = this.physics.add.sprite(1488, 496, 'npcP1', FRAMES.npc1.idle);
   this.npcP2 = this.physics.add.sprite(2982, 580, 'npcP2', FRAMES.npc2.idle);
 
@@ -252,7 +253,7 @@ function create() {
 
   inicializarTextoObjetivo(this);
   mostrarObjetivo.call(this, "Vá até a escola", 4000);
-  
+
 }
 
 function inicializarTextoObjetivo(scene) {
@@ -308,7 +309,7 @@ function update() {
   if (gameState.dialogoAtivo) return;
 
   // 3. Lógica de Seguimento
-  const missoesDeSeguir = ['levarParaCasa', 'irPizzaria', 'elaSegueEle', 'levarParaCasaSegundoEncontro', 'irParaSaladeAula', 'irLanchoneteAlemao'];
+  const missoesDeSeguir = ['levarParaCasa', 'irPizzaria', 'elaSegueEle', 'levarParaCasaSegundoEncontro', 'irParaSaladeAula', 'finalRecreio', 'dialogoAlemao'];
 
   if (npc && (missoesDeSeguir.includes(gameState.missaoAtual) || missoesDeSeguir.includes(gameState.subMissao))) {
     const distancia = Phaser.Math.Distance.Between(npc.x, npc.y, player.x, player.y);
@@ -494,7 +495,7 @@ function configurarZonas() {
   this.physics.world.enable(this.zonaSala);
   this.zonaSala.body.setAllowGravity(false);
 
-  
+
 
   this.physics.add.overlap(this.playerEle, this.zonaSala, () => {
     if (gameState.missaoAtual === 'irParaSala' && gameState.subMissao === 'eleVai') {
@@ -511,6 +512,13 @@ function configurarZonas() {
   this.physics.add.overlap(this.playerEla, this.zonaSala, () => {
     if (gameState.missaoAtual === 'irParaSala' && gameState.subMissao === 'elaVai') {
       ambosNaSala.call(this);
+    }
+
+  });
+
+  this.physics.add.overlap(this.playerEla, this.zonaSala, () => {
+    if (gameState.missaoAtual === 'finalRecreio' && gameState.subMissao === 'finalRecreio') {
+      finalAula.call(this);
     }
   });
 
@@ -581,19 +589,52 @@ function configurarZonas() {
     }
   });
 
+  // Zona recreio
+  this.zonaRecreio = this.add.zone(3053, 462, 80, 80);
+  this.physics.world.enable(this.zonaRecreio);
+  this.zonaRecreio.body.setAllowGravity(false);
+
+  this.physics.add.overlap(this.playerEla, this.zonaRecreio, () => {
+    if (gameState.missaoAtual === 'dialogoRecreio' && !gameState.dialogoAtivo) {
+      iniciarDialogoRecreio.call(this);
+    }
+  });
+
+  // Zona Alemao
+  this.zonaDialogoAlemao = this.add.zone(1611, 679, 80, 80);
+  this.physics.world.enable(this.zonaDialogoAlemao);
+  this.zonaDialogoAlemao.body.setAllowGravity(false);
+
+  this.physics.add.overlap(this.playerEla, this.zonaDialogoAlemao, () => {
+    if (gameState.missaoAtual === 'dialogoAlemao' && !gameState.dialogoAtivo) {
+      dialogoAlemao.call(this);
+    }
+  });
+
   // Zona Alemao
   this.zonaAlemao = this.add.zone(1361, 550, 80, 80);
   this.physics.world.enable(this.zonaAlemao);
   this.zonaAlemao.body.setAllowGravity(false);
 
   this.physics.add.overlap(this.playerEla, this.zonaAlemao, () => {
+    if (gameState.missaoAtual === 'irparamesa' && !gameState.dialogoAtivo) {
+      conversaAmigos.call(this);
+    }
+  });
+
+  // Zona Alemao
+  this.zonaAlemao = this.add.zone(1361, 550, 80, 80);
+  this.physics.world.enable(this.zonaAlemao);
+  this.zonaAlemao.body.setAllowGravity(false);
+
+  this.physics.add.overlap(this.playerEle, this.zonaAlemao, () => {
     if (gameState.missaoAtual === 'irLanchoneteAlemao' && !gameState.dialogoAtivo) {
       iniciarDialogoAlemao.call(this);
     }
   });
 
   // MARCA NO MAPA
-  //this.debugZonaCasa = marcarZonaNoMapa(this, this.zonaPraca, 0x00ff00);
+  this.debugZonaCasa = marcarZonaNoMapa(this, this.zonaRecreio, 0x00ff00);
 
 
   // Colisões entre Personagens
@@ -606,30 +647,30 @@ function configurarZonas() {
     else if (gameState.missaoAtual === 'encontroPraca' && gameState.subMissao === 'eleVai' && !gameState.dialogoAtivo) {
       iniciarSegundoEncontro.call(this);
     }
-     else if (gameState.missaoAtual === 'irParaEscolaSegundaFeira' && gameState.subMissao === 'FalarComAlexandre' && !gameState.dialogoAtivo) {
+    else if (gameState.missaoAtual === 'irParaEscolaSegundaFeira' && gameState.subMissao === 'FalarComAlexandre' && !gameState.dialogoAtivo) {
       conversarSegundaEscola.call(this);
     }
   });
 }
 
 function mudarParaNoite(cena, duracao = 2000) {
-    if (!cena.filtroNoite) {
-        console.error("Filtro de noite não encontrado na cena!");
-        return;
-    }
-    cena.tweens.add({
-        targets: cena.filtroNoite,
-        alpha:0.7, // Aumentei um pouco para você notar a diferença
-        duration: duracao
-    });
+  if (!cena.filtroNoite) {
+    console.error("Filtro de noite não encontrado na cena!");
+    return;
+  }
+  cena.tweens.add({
+    targets: cena.filtroNoite,
+    alpha: 0.7, // Aumentei um pouco para você notar a diferença
+    duration: duracao
+  });
 }
 
 function mudarParaDia(cena, duracao = 2000) {
-    cena.tweens.add({
-        targets: cena.filtroNoite,
-        alpha: 0, // Volta a ficar invisível
-        duration: duracao
-    });
+  cena.tweens.add({
+    targets: cena.filtroNoite,
+    alpha: 0, // Volta a ficar invisível
+    duration: duracao
+  });
 }
 
 function atualizarMarcadorMissao() {
@@ -648,8 +689,11 @@ function atualizarMarcadorMissao() {
   else if (gameState.missaoAtual === 'encontroPraca') zonaAlvo = this.zonaPraca;
   else if (gameState.missaoAtual === 'levarParaCasaSegundoEncontro') zonaAlvo = this.zonaCasa;
   else if (gameState.missaoAtual === 'irParaSaladeAula') zonaAlvo = this.zonaSala;
-   else if (gameState.missaoAtual === 'irLanchoneteAlemao') zonaAlvo = this.zonaAlemao;
-  
+  else if (gameState.missaoAtual === 'dialogoRecreio') zonaAlvo = this.zonaRecreio;
+  else if (gameState.missaoAtual === 'finalRecreio') zonaAlvo = this.zonaSala;
+  else if (gameState.missaoAtual === 'irparamesa') zonaAlvo = this.zonaAlemao;
+  else if (gameState.missaoAtual === 'irLanchoneteAlemao') zonaAlvo = this.zonaAlemao;
+
   if (!zonaAlvo) return;
 
   this.marcadorSprite = this.add.sprite(zonaAlvo.x, zonaAlvo.y - 30, 'marcadorMissao');
@@ -809,7 +853,7 @@ function mostrarRelogioAnimado() {
 }
 
 function finalizarAula() {
-  
+
   gameState.dialogoAtivo = false;
   gameState.missaoAtual = 'falarComEla';
   gameState.subMissao = null;
@@ -1095,7 +1139,10 @@ function moverPlayer({ personagem, tipo, x, y, onFinish }) {
         },
         onComplete: () => {
           personagem.anims.stop();
-          personagem.setVisible(false);
+          if (personagem == this.playerEla) {
+            personagem.setVisible(false);
+          }
+
           this.playerEle.body.enable = true;
           personagem.body.enable = true;
 
@@ -1162,7 +1209,7 @@ function enviarMensagem(texto, remetente) {
 
 function segundoDia() {
 
-   mudarParaDia(this, 3000);
+  mudarParaDia(this, 3000);
 
   this.playerEle.body.moves = true;
   mudarCameraDePlayer(this.cameras.main, this.playerEla, this);
@@ -1445,7 +1492,7 @@ function mensagemRecebidaDeConfirmalcao() {
 }
 
 function senaEsperaNaPraca() {
-  
+
   pararPersonagens.call(this);
   this.playerEla.body.moves = false;
   gameState.personagemAtual = 'ele';
@@ -1466,7 +1513,7 @@ function senaEsperaNaPraca() {
 function mudarparaAlexandreEncontroPraca() {
 
   pararPersonagens.call(this);
-  
+
   gameState.dialogoAtivo = false;
   this.playerEla.body.moves = false;
   mudarCameraDePlayer(this.cameras.main, this.playerEle, this);
@@ -1615,7 +1662,7 @@ function chegouNaCasaSegundoEncontro() {
     { nome: 'Alexandre', texto: 'Amém. Fica com Deus também. Boa noite.' }
   ], () => {
     pararPersonagens.call(this);
-     gameState.personagemAtual = 'ele';
+    gameState.personagemAtual = 'ele';
     moverPlayer.call(this, {
       personagem: this.playerEla,
       tipo: 'ela',
@@ -1632,9 +1679,9 @@ function chegouNaCasaSegundoEncontro() {
   });
 }
 
-function pularSegunda(){
+function pularSegunda() {
 
- this.time.delayedCall(1000, () => {
+  this.time.delayedCall(1000, () => {
     gameState.dialogoAtivo = false;
     this.cameras.main.fadeOut(600, 0, 0, 0);
     this.time.delayedCall(650, () => {
@@ -1649,7 +1696,7 @@ function pularSegunda(){
 function irParaEscolaSegunda() {
 
   pararPersonagens.call(this);
-  
+
   gameState.dialogoAtivo = false;
   this.playerEla.body.moves = false;
   mudarCameraDePlayer(this.cameras.main, this.playerEla, this);
@@ -1684,16 +1731,16 @@ function irParaEscolaSegunda() {
 }
 
 
-function conversarSegundaEscola (){
-       
-      gameState.dialogoAtivo = false;
-      this.playerEla.body.moves = true;
-      this.playerEle.body.moves = true;
-      olharUmParaOutro.call(this, getPersonagemAtivo(this), getNpc(this));
+function conversarSegundaEscola() {
+
+  gameState.dialogoAtivo = false;
+  this.playerEla.body.moves = true;
+  this.playerEle.body.moves = true;
+  olharUmParaOutro.call(this, getPersonagemAtivo(this), getNpc(this));
 
   iniciarDialogo.call(this, [
     { nome: 'Ana', texto: 'Oi, me atrasei um pouco hoje 😁' },
-    { nome: 'Alexandre', texto: 'Eu percebi, achei que não ia mais vim, mas agora sei o motivo de tanta demora.' },
+    { nome: 'Alexandre', texto: 'Eu percebi, achei que não ia mais vir, mas agora sei o motivo de tanta demora.' },
     { nome: 'Ana', texto: 'Oque?' },
     { nome: 'Alexandre', texto: 'Você esta maravilhosa 😍💕' },
     { nome: 'Ana', texto: 'Aiaia, so você mesmo viu 😂 Estou normal como todos os outros dias' },
@@ -1715,32 +1762,51 @@ function conversarSegundaEscola (){
 
 }
 
-function chegaranNaSala(){
+function chegaranNaSala() {
   pararPersonagens.call(this);
   this.playerEla.body.moves = false;
   gameState.dialogoAtivo = false;
   gameState.missaoAtual = null;
 
   this.time.delayedCall(500, () => {
-    
+
     atualizarMarcadorMissao.call(this);
     this.cameras.main.fadeOut(600, 0, 0, 0);
     this.time.delayedCall(650, () => {
       this.cameras.main.fadeIn(1, 0, 0, 0);
       this.playerEle.setVisible(false);
-      finalDaAula.call(this);
+      inicioRecreio.call(this);
     });
   });
 }
 
-function finalDaAula(){
+function inicioRecreio() {
 
-  this.playerEla.setPosition(2926, 363);
-  this.playerEle.setPosition(2926, 363);
   this.playerEle.setVisible(true);
-   this.playerEla.body.moves = true;
-  mudarCameraDePlayer(this.cameras.main, this.playerEle, this);
-  mudarParaNoite(this, 0);
+  this.playerEla.body.moves = true;
+
+  gameState.missaoAtual = 'dialogoRecreio';
+
+  gameState.dialogoAtivo = false;
+  mudarCameraDePlayer(this.cameras.main, this.playerEla, this);
+  pararPersonagens.call(this);
+
+  // Use as chaves corretas: npc1 e npc2
+  this.npcP1.play('npc1-left');
+  this.npcP1.anims.stop(); // Para ele ficar parado olhando para a esquerda
+
+  this.npcP2.play('npc2-right');
+  this.npcP2.anims.stop(); // Para ele ficar parado olhando para a direita
+
+  this.playerEle.play('ele-up');
+  this.playerEle.anims.stop(); // Para ele ficar parado olhando para a direita
+
+  this.npcP1.setPosition(3088, 461);
+  this.npcP2.setPosition(3025, 462);
+  this.playerEla.setPosition(2934, 336);
+  this.playerEle.setPosition(3053, 489);
+
+  // mudarParaNoite(this, 0);
 
   const overlay = this.add.rectangle(0, 0, this.scale.width, this.scale.height, 0x000000)
     .setOrigin(0).setScrollFactor(0).setDepth(9000).setAlpha(1);
@@ -1755,7 +1821,106 @@ function finalDaAula(){
   let hora = 18;
   this.time.addEvent({
     delay: 600,
-    repeat: 4,
+    repeat: 1,
+    callback: () => {
+      hora++;
+      texto.setText(hora === 20 ? 'Recreio' : `🕒 ${hora}:00`);
+    }
+  });
+
+  this.time.delayedCall(3500, () => {
+    bg.destroy();
+    texto.destroy();
+    this.tweens.add({
+      targets: overlay,
+      alpha: 0,
+      duration: 700,
+      onComplete: () => {
+        overlay.destroy();
+        atualizarMarcadorMissao.call(this);
+      }
+    });
+  });
+}
+
+
+function iniciarDialogoRecreio() {
+
+  gameState.dialogoAtivo = true;
+  pararPersonagens.call(this);
+  gameState.missaoAtual = null;
+  atualizarMarcadorMissao.call(this);
+  this.playerEla.setPosition(3053, 434);
+  this.playerEla.play('ela-down');
+  this.playerEla.anims.stop(); // Para ele ficar parado olhando para a direita
+
+  iniciarDialogo.call(this, [
+    { nome: 'Netinho', texto: 'E ai, Paulinha, tudo joia ? Fiquei sabendo que ja conheceu o meu cunhado Alexandre 😂' },
+    { nome: 'Alexandre', texto: 'Cunhado? Estou sabendo disso não 🤣' },
+    { nome: 'Ana', texto: 'Nem eu viu, so ele que esta namorando com sua irmão, mas ela não kkk' },
+    { nome: 'Netinho', texto: 'Um dia será' },
+    { nome: 'Ana', texto: 'Oque vão fazer depois da aula? Vamos ir la no Alemanão comer algo, querem ir?' },
+    { nome: 'Luciano', texto: 'Pode ser.' },
+    { nome: 'netinho', texto: 'Combinado, depois da aula vamos direto, esperamos vocês lá.' },
+    { nome: 'Ana', texto: 'Combinado' }
+  ], () => {
+
+    gameState.dialogoAtivo = false;
+    gameState.personagemAtual = 'ela';
+    gameState.missaoAtual = 'finalRecreio';
+    gameState.subMissao = 'finalRecreio';
+    mostrarObjetivo.call(this, "Final, do recreio. Volte para a sala de aula", 4000);
+    atualizarMarcadorMissao.call(this);
+  });
+}
+
+function finalAula() {
+  this.playerEle.setVisible(false);
+  this.playerEla.setVisible(false);
+  gameState.dialogoAtivo = false;
+  pararPersonagens.call(this);
+  gameState.missaoAtual = null;
+  gameState.subMissao = null;
+
+  this.time.delayedCall(1000, () => {
+    this.cameras.main.fadeOut(600, 0, 0, 0);
+    this.time.delayedCall(650, () => {
+      this.cameras.main.fadeIn(1, 0, 0, 0);
+      this.playerEle.setVisible(true);
+      this.playerEla.setVisible(true);
+
+      this.npcP1.setPosition(1593, 681);
+      this.npcP2.setPosition(1635, 681);
+
+      forcarDirecao(this.npcP1, 'npc1', 'right');
+      forcarDirecao(this.npcP2, 'npc2', 'left');
+
+      this.playerEla.setPosition(2934, 336);
+      this.playerEle.setPosition(3046, 399);
+
+      terceiroEncontro.call(this);
+    });
+  });
+}
+
+function terceiroEncontro() {
+
+  // mudarParaNoite(this, 0);
+
+  const overlay = this.add.rectangle(0, 0, this.scale.width, this.scale.height, 0x000000)
+    .setOrigin(0).setScrollFactor(0).setDepth(9000).setAlpha(1);
+
+  const x = this.scale.width / 2 - 160;
+  const y = this.scale.height / 2 - 60;
+
+  const bg = this.add.graphics().fillStyle(0x000000, 0.85).fillRoundedRect(x, y, 320, 120, 16).setScrollFactor(0).setDepth(9100);
+  const texto = this.add.text(x + 70, y + 35, '🕒 20:00', { fontSize: '32px', fontStyle: 'bold', color: '#ffffff' })
+    .setScrollFactor(0).setDepth(9200);
+
+  let hora = 20;
+  this.time.addEvent({
+    delay: 600,
+    repeat: 1,
     callback: () => {
       hora++;
       texto.setText(`🕒 ${hora}:00`);
@@ -1768,65 +1933,299 @@ function finalDaAula(){
     this.tweens.add({
       targets: overlay,
       alpha: 0,
-      duration: 800,
+      duration: 700,
       onComplete: () => {
         overlay.destroy();
-        terceiroEncontro.call(this);
-
+        gameState.missaoAtual = 'dialogoAlemao';
+        //gameState.missaoAtual = 'irLanchoneteAlemao';
+        gameState.subMissao = 'beijala';
+        mostrarObjetivo.call(this, "Ir até a lanchonete do Alemão", 4000);
+        atualizarMarcadorMissao.call(this);
       }
     });
   });
 }
 
-function terceiroEncontro(){
-  gameState.missaoAtual = 'irLanchoneteAlemao';
-  gameState.subMissao = 'beijala';
-  mostrarObjetivo.call(this, "Ir até a lanchonete do Alemão", 4000);
-  atualizarMarcadorMissao.call(this);
+function dialogoAlemao() {
+
+  gameState.dialogoAtivo = true;
+  pararPersonagens.call(this);
+
+  this.playerEla.setPosition(1604, 700);
+  this.playerEle.setPosition(1611, 645);
+
+  olharUmParaOutro.call(this, getPersonagemAtivo(this), getNpc(this));
+  forcarDirecao(this.playerEla, 'ela', 'up');
+  forcarDirecao(this.playerEle, 'ele', 'down');
+
+  iniciarDialogo.call(this, [
+    { nome: 'Netinho', texto: 'Vão querer jogar uma partida de sinuca primeiro ?' },
+    { nome: 'Alexandre', texto: 'Pode ir jogando primeiro vocês, eu e a Paula vamos pedindo a pizza' },
+    { nome: 'Ana', texto: 'Vão querer que sabor?' },
+    { nome: 'Netinho', texto: 'Colobresa pra min kkkk' },
+    { nome: 'Ana', texto: 'Tá ok' },
+    { nome: 'Luciano', texto: 'Pra min pode ser de moda da casa.' },
+    { nome: 'Alexandre', texto: 'Beleza' }
+  ], () => {
+
+    gameState.dialogoAtivo = false;
+    gameState.personagemAtual = 'ela';
+    gameState.missaoAtual = 'irparamesa';
+    mostrarObjetivo.call(this, "Va para a mesa fazer o pedido", 4000);
+    atualizarMarcadorMissao.call(this);
+
+  });
+
 }
 
-function iniciarDialogoAlemao(){
+function conversaAmigos() {
+
+  gameState.dialogoAtivo = true;
+  pararPersonagens.call(this);
+  this.playerEla.setPosition(1380, 560);
+  forcarDirecao(this.playerEla, 'ela', 'left');
+
+  iniciarDialogo.call(this, [
+    { nome: 'Netinho', texto: 'Pode ir lá, Xandi. Não vamos atrapalhar vocês rsrsrs.' },
+    { nome: 'Netinho', texto: 'Só não enrola muito, já tô com fome 😂' },
+    { nome: 'Alexandre', texto: 'Enrolar por quê? Somos só amigos, pô rsrsrs.' },
+    { nome: 'Netinho', texto: 'Não é isso que eu vejo quando olha pra ela, todo mundo já sabe.' },
+    { nome: 'Alexandre', texto: 'Vocês estão vendo muito já, isso que nem beberam kkkk.' },
+    { nome: 'Luciano', texto: 'Vai lá, que vamos jogar um pouco.' },
+    { nome: 'Alexandre', texto: 'Vou lá falar com a Ana.' }
+  ], () => {
+
+    gameState.dialogoAtivo = false;
+    this.playerEla.body.moves = false
+    mudarCameraDePlayer(this.cameras.main, this.playerEle, this);
+    gameState.missaoAtual = 'irLanchoneteAlemao';
+    mostrarObjetivo.call(this, "Ir até a mesa falar com a Ana", 4000);
+    atualizarMarcadorMissao.call(this);
+
+    moverPlayer.call(this, {
+      personagem: this.npcP1,
+      tipo: 'npc1',
+      x: 1537,
+      y: 624,
+    });
+
+    moverPlayer.call(this, {
+      personagem: this.npcP2,
+      tipo: 'npc2',
+      x: 1584,
+      y: 566,
+      onFinish: () => {
+        this.npcP2.play('npc2-left');
+        this.npcP2.anims.stop(); // Para ele ficar parado olhando para a esquerda
+      }
+    });
+
+  });
+
+}
+
+function iniciarDialogoAlemao() {
+  gameState.dialogoAtivo = true;
   pararPersonagens.call(this);
 
   this.playerEla.setPosition(1380, 560);
   this.playerEle.setPosition(1339, 560);
 
-  this.npcP1.setPosition(1520, 566);
-  this.npcP2.setPosition(1616, 566);
-
   forcarDirecao(this.playerEle, 'ele', 'right');
   forcarDirecao(this.playerEla, 'ela', 'left');
 
-  forcarDirecao(this.npcP1, 'npc1', 'right');
-  forcarDirecao(this.npcP2, 'npc2', 'left');
-
   olharUmParaOutro.call(this, getPersonagemAtivo(this), getNpc(this));
-  this.playerEla.body.moves= false;
+  this.playerEla.body.moves = false;
   this.playerEle.body.moves = false;
   gameState.missaoAtual = null;
-  gameState.subMissao = 'beijala';
+  gameState.subMissao = null;
   atualizarMarcadorMissao.call(this);
-   iniciarDialogo.call(this, [
-    { nome: 'Alexandre', texto: 'E ai, oque você fez domingo ?' },
-    { nome: 'Ana', texto: 'Fiz uma serviços em casa, estava muito cansada, fui dormir cedo' },
-    { nome: 'Ana', texto: 'E você?' },
-    { nome: 'Alexandre', texto: 'Fiquei o dia todo no computador' },
-    { nome: 'Ana', texto: 'Aiaia, so você mesmo viu 😂 Nem me mandou uma mensagem' },
-    { nome: 'Alexandre', texto: 'Não quis te sufucar rsrsrs.' },
-    { nome: 'Ana', texto: 'Jamais.' },
-    { nome: 'Alexandre', texto: 'Pode deixar então, não vou mais te deixar em paz 🤣' },
-    { nome: 'Ana', texto: 'Quero ver.' },
-    { nome: 'Alexandre', texto: 'Vamos.' }
+
+  iniciarDialogo.call(this, [
+    { nome: 'Alexandre', texto: 'Segundo o Netinho, eu vim aqui com segundas intenções rsrsrsr' },
+    { nome: 'Ana', texto: 'é né, e não foi ?' },
+    { nome: 'Alexandre', texto: 'Claro que não, não é porque eu fiquei pensando em você o final de semana inteiro que eu estou com segundas intenções' },
+    { nome: 'Ana', texto: 'Eita rsrsrs, o final de semana inteiro? Exagerado 🤣' },
+    { nome: 'Alexandre', texto: 'Pior que foi mesmo.' },
+    { nome: 'Ana', texto: 'Então porque não me ligou ? Agente podia ter se encontrado do Domingo novamente, já que você estava so pensando em min mesmo rsrsr' },
+    { nome: 'Alexandre', texto: 'Eu não queria te sufocar. E tambem, foi bom deixar você sentir um pouco de saudades tambem.' },
+    { nome: 'Ana', texto: 'E quem falou que eu fiquei com saudades ?' },
+    { nome: 'Alexandre', texto: 'Ninguem, mas eu gosto de pensar que sim 😁' },
+    { nome: 'Ana', texto: 'Pior que eu pensei uma ou duas vezes em vocês mesom 😊' },
+    { nome: 'Alexandre', texto: 'Já é uma evolução né' },
+    { nome: 'Ana', texto: 'Tavez' },
+
+
   ], () => {
-    
+
+    fadebeijo.call(this);
+
     gameState.dialogoAtivo = false;
-    gameState.personagemAtual = 'ela';
-    gameState.missaoAtual = '';
-    mostrarObjetivo.call(this, "Sinal tocal, vá para sala de aula", 4000);
+    mudarCameraDePlayer(this.cameras.main, this.playerEla, this);
+    gameState.missaoAtual = null;
+    //mostrarObjetivo.call(this, "Sinal tocal, vá para sala de aula", 4000);
     gameState.subMissao = null;
     atualizarMarcadorMissao.call(this);
 
   });
+}
+
+function fadebeijo() {
+
+  this.cameras.main.fadeOut(600, 0, 0, 0);
+  this.time.delayedCall(650, () => {
+    this.cameras.main.fadeIn(1, 0, 0, 0);
+    antesdobeijo.call(this, 200);;
+    
+    
+  this.playerEla.body.moves = false;
+  this.pararPersonagens = true;
+
+  });
+
+}
+
+function antesdobeijo() {
+
+  const overlay = this.add.rectangle(0, 0, this.scale.width, this.scale.height, 0x000000)
+    .setOrigin(0).setScrollFactor(0).setDepth(9000).setAlpha(1);
+
+  const x = this.scale.width / 2 - 160;
+  const y = this.scale.height / 2 - 60;
+
+  const textoBeijo = `
+Entre um pedido e outro, eles conversavam sem pressa, como se o tempo tivesse decidido andar mais devagar naquela noite. Falavam de coisas simples: músicas favoritas, lembranças da infância, planos que ainda não tinham forma, mas já carregavam vontade.
+
+A cada troca de olhares, o sorriso surgia com mais facilidade. O nervosismo inicial foi dando lugar a uma sensação confortável, quase familiar, como se já se conhecessem há mais tempo do que realmente tinham.
+
+Depois de mais algumas conversas, muitas risadas, beijos no rosto e silêncios cheios de significado, ela respirou fundo. Aproximou-se um pouco mais e, com um sorriso tímido, tomou a iniciativa de beijá-lo.
+
+Foi rápido, mas suficiente para transformar aquele encontro em algo inesquecível.
+`;
+
+  /// 1. Crie o fundo e o texto centralizados (como fizemos antes)
+  const centroX = this.cameras.main.centerX;
+  const centroY = this.cameras.main.centerY;
+  const larguraFundo = 800;
+  const alturaFundo = 500;
+
+  const bg = this.add.graphics()
+    .fillStyle(0x000000, 0.85)
+    .fillRoundedRect(centroX - larguraFundo / 2, centroY - alturaFundo / 2, larguraFundo, alturaFundo, 16)
+    .setScrollFactor(0)
+    .setDepth(9100);
+
+  const texto = this.add.text(centroX, centroY, textoBeijo, {
+    fontSize: '22px',
+    color: '#ffffff',
+    wordWrap: { width: larguraFundo - 60 },
+    lineSpacing: 8,
+    align: 'center'
+  })
+    .setOrigin(0.5)
+    .setScrollFactor(0)
+    .setDepth(9200);
+
+  // 2. Adicione uma instrução visual para o jogador saber o que fazer
+  const instrucao = this.add.text(centroX, centroY + (alturaFundo / 2) + 45, 'Pressione ESPAÇO para continuar', {
+    fontSize: '42px',
+    color: '#ffffff'
+  })
+    .setOrigin(0.5)
+    .setScrollFactor(0)
+    .setDepth(9201);
+
+  // 3. Crie a função que vai fechar a tela
+  const fecharTela = () => {
+    // Remove o evento de teclado para não disparar duas vezes
+    this.input.keyboard.off('keydown-SPACE', fecharTela);
+    olharUmParaOutro.call(this, getNpc(this), getPersonagemAtivo(this));
+    gameState.dialogoAtivo = true;
+
+    // Destrói os elementos visuais
+    bg.destroy();
+    texto.destroy();
+    instrucao.destroy();
+
+    // Inicia o fade out do overlay e segue com a lógica do jogo
+    this.tweens.add({
+      targets: overlay,
+      alpha: 0,
+      duration: 700,
+      onComplete: () => {
+        overlay.destroy();
+
+        // 1. Faz os dois se aproximarem (um passo à frente)
+        this.tweens.add({
+          targets: this.playerEla,
+          x: this.playerEle.x + 20, // Ajusta para ficarem bem próximos
+          duration: 1000,
+          ease: 'Power1'
+        });
+
+        this.tweens.add({
+          targets: this.playerEle,
+          x: this.playerEle.x + 5, // Pequeno ajuste de posição
+          duration: 1000,
+          ease: 'Power1',
+          onComplete: () => {
+            // 2. Cria o coração acima deles quando se tocam
+            const coracao = this.add.text(
+              (this.playerEla.x + this.playerEle.x) / 2,
+              this.playerEle.y - 40,
+              '❤️',
+              { fontSize: '40px' }
+            ).setOrigin(0.5).setDepth(10000);
+
+            // 3. Efeito de Pulsar (Coração batendo)
+            this.tweens.add({
+              targets: coracao,
+              scale: 1.5,       // Aumenta o tamanho
+              duration: 400,    // Velocidade da batida
+              yoyo: true,       // Volta ao tamanho original
+              repeat: 5,        // Quantas vezes vai pulsar
+              onComplete: () => {
+                // 4. Finaliza a cena e segue para a próxima missão
+                this.tweens.add({
+                  targets: coracao,
+                  alpha: 0,
+                  duration: 500,
+                  onComplete: () => {
+                    coracao.destroy();
+                    gameState.love += 30;
+                    atualizarHud.call(this);
+                    this.playerEle.body.moves = true;
+                    gameState.missaoAtual = null;
+                    gameState.subMissao = null;
+                    //mostrarObjetivo.call(this, "Ir até a lanchonete do Alemão", 4000);
+                    //atualizarMarcadorMissao.call(this);
+                    iniciarDialogo.call(this, [
+                      { nome: 'Netinho', texto: 'Aeeeeee, achei que não ia acontecer nunca isso 😂' },
+                      { nome: 'Luciano', texto: 'Eu ja não aguentava mais jogar 🤣🤣' },
+                    ], () => {
+
+                    gameState.missaoAtual = null;
+                    gameState.subMissao = null;
+                     this.playerEla.body.moves = true;
+                    //mostrarObjetivo.call(this, "Ir até a lanchonete do Alemão", 4000);
+                    //atualizarMarcadorMissao.call(this);
+
+
+                    });
+
+                  }
+                });
+              }
+            });
+          }
+        });
+      }
+    });
+  };
+
+  // 4. Ativa o escutador de teclado
+  this.input.keyboard.on('keydown-SPACE', fecharTela);
+
 }
 
 // Atalhos de DEV
@@ -1869,31 +2268,30 @@ function enviarMensagemAlexandre() {
 }
 
 function encontroPracaterere() {
-      gameState.love += 10;
-      atualizarHud.call(this);
-      gameState.dialogoAtivo = false;
-      this.playerEla.body.moves = true;
-      this.playerEle.body.moves = true;
-      mudarParaNoite(this, 2000)
-      this.playerEla.setPosition(1471, 624);
-      this.playerEle.setPosition(1471, 624);
-      mudarCameraDePlayer(this.cameras.main, this.playerEla, this);
-     // gameState.missaoAtual = 'levarParaCasaSegundoEncontro';
-      //mostrarObjetivo.call(this, "Voltar para casa 🏡", 4000);
-      //atualizarMarcadorMissao.call(this);
-      gameState.missaoAtual = 'irLanchoneteAlemao';
+  gameState.love += 10;
+  atualizarHud.call(this);
+  gameState.dialogoAtivo = false;
+  this.playerEla.body.moves = true;
+  this.playerEle.body.moves = true;
+  //mudarParaNoite(this, 2000)
+  this.playerEla.setPosition(1471, 624);
+  this.playerEle.setPosition(1471, 624);
+  mudarCameraDePlayer(this.cameras.main, this.playerEla, this);
+  // gameState.missaoAtual = 'levarParaCasaSegundoEncontro';
+  //mostrarObjetivo.call(this, "Voltar para casa 🏡", 4000);
+  //atualizarMarcadorMissao.call(this);
+  //gameState.missaoAtual = 'irLanchoneteAlemao';
   gameState.subMissao = 'beijala';
   mostrarObjetivo.call(this, "Ir até a lanchonete do Alemão", 4000);
   atualizarMarcadorMissao.call(this);
 }
 
-
 // --- 6. MOVIMENTAÇÃO E ANIMAÇÕES ---
 
 function criarAnimacoes(scene) {
   // Adicione 'npc1' e 'npc2' na lista de tipos
-  const tipos = ['ela', 'ele', 'npc1', 'npc2']; 
-  
+  const tipos = ['ela', 'ele', 'npc1', 'npc2'];
+
   tipos.forEach(tipo => {
     // Define qual sprite usar para cada tipo
     let spriteKey;
