@@ -1118,11 +1118,12 @@ function moverPlayer({ personagem, tipo, x, y, onFinish }) {
   const cena = this;
   personagem.body.setVelocity(0, 0);
   personagem.body.enable = false;
+  const duracao = personagem === this.playerEla ? 2000 : 4500;
 
   cena.tweens.add({
     targets: personagem,
     x: x,
-    duration: 2000,
+    duration: duracao,
     ease: 'Linear',
     onStart: () => {
       const anim = personagem.x > x ? `${tipo}-left` : `${tipo}-right`;
@@ -2202,17 +2203,37 @@ Foi rápido, mas suficiente para transformar aquele encontro em algo inesquecív
                     iniciarDialogo.call(this, [
                       { nome: 'Netinho', texto: 'Aeeeeee, achei que não ia acontecer nunca isso 😂' },
                       { nome: 'Luciano', texto: 'Eu ja não aguentava mais jogar 🤣🤣' },
+                      { nome: 'Netinho', texto: 'Pessoal, ja vamos indo, podem ficar avontade rsrsrs' },
+                      { nome: 'Alexandre', texto: 'Até amanhã' },
+
                     ], () => {
 
                     gameState.missaoAtual = null;
                     gameState.subMissao = null;
                      this.playerEla.body.moves = true;
                      iniciarJornadaNPC(this.npcP1, 'npc1', this);
-                      iniciarJornadaNPC(this.npcP2, 'npc2', this);
-                    //mostrarObjetivo.call(this, "Ir até a lanchonete do Alemão", 4000);
-                    //atualizarMarcadorMissao.call(this);
+                     iniciarJornadaNPC(this.npcP2, 'npc2', this);
+                     this.playerEla.setPosition(1380, 560);
+                     this.playerEle.setPosition(1339, 560);
 
+                     iniciarDialogo.call(this, [
+                     
+                      { nome: 'Alexandre', texto: 'Então quem estava com segundas intenções era você rsrsr' },
+                      { nome: 'Ana', texto: 'Porque eu? Quem estava querendo me beijar mais não tinha corragem era você 😆' },
+                      { nome: 'Alexandre', texto: 'Eu nada, eu estava deboa qui, so conversando mesmo, sem nenhuma intenção a não ser te conhecer melhor 😜' },
+                      { nome: 'Ana', texto: 'Sei, eu vi o jeito que você estava me olhando tá rapaizinho' },
+                      { nome: 'Alexandre', texto: 'Eu estava vendo vendo o tanto que você estava dando risada e me abraçando toda hora rsrr inclusive me dando beijos no rosto 😘' },
+                      { nome: 'Ana', texto: 'Eu estava esperando você tomar iniciativa uai rsrsrsrr' },
+                      { nome: 'Alexandre', texto: 'Eu ia, mas você não soube esperar kkkkk. Mas que bom que você não esperou, provavelmente eu não tia ter corragem mesmo rssrrs' },
+                      { nome: 'Ana', texto: 'Mas logo você, qe' },
+                    ], () => {
 
+                    gameState.missaoAtual = null;
+                    gameState.subMissao = null;
+                     mostrarObjetivo.call(this, "Voltar para casa 🏡", 4000);
+                     
+                    });
+                    
                     });
 
                   }
@@ -2238,31 +2259,36 @@ Foi rápido, mas suficiente para transformar aquele encontro em algo inesquecív
  */
 function iniciarJornadaNPC(npc, tipoAnimacao, cena) {
   // Posições de destino
-  const pos1 = { x: 1569, y: 743 };
-  const pos3 = { x: 1576, y: 777 };
+  const pos1 = { x: 1579, y: 777};
+  const pos1_alt = { x: 1600, y: 728}; // alternativa para outro NPC
   const pos2 = { x: 3184, y: 771 };
+  const pos2_alt = { x: 3184,y: 728}; // destino alternativo
 
-  console.log(`Iniciando movimento do NPC para a Posição 1: (${pos1.x}, ${pos1.y})`);
+  // Define destinos baseado no NPC
+  const primeiraPos = (npc === cena.npcP1) ? pos1_alt : pos1;
+  const segundaPos  = (npc === cena.npcP1) ? pos2 : pos2_alt;
+
+  console.log(`Iniciando movimento do NPC para (${primeiraPos.x}, ${primeiraPos.y})`);
 
   // 1. Mover para a primeira posição
   moverPlayer.call(cena, {
     personagem: npc,
     tipo: tipoAnimacao,
-     x: (npc === this.npcP1) ? pos3.x : pos1.x,
-    y: pos1.y,
-    // O callback onFinish será executado quando o primeiro movimento terminar
+    x: primeiraPos.x,
+    y: primeiraPos.y,
+
     onFinish: () => {
-      console.log(`Chegou à Posição 1. Iniciando movimento para a Posição 2: (${pos2.x}, ${pos2.y})`);
-      
+      console.log(`Chegou à primeira posição. Indo para (${segundaPos.x}, ${segundaPos.y})`);
+
       // 2. Mover para a segunda posição
       moverPlayer.call(cena, {
         personagem: npc,
         tipo: tipoAnimacao,
-        x: pos2.x,
-        y: pos2.y,
+        x: segundaPos.x,
+        y: segundaPos.y,
+
         onFinish: () => {
-          console.log("Jornada do NPC concluída!");
-          // Aqui você pode adicionar qualquer lógica para quando o NPC chegar ao destino final.
+          console.log('Jornada do NPC concluída!');
         }
       });
     }
