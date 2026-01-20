@@ -103,6 +103,8 @@ const FRAMES = {
   }
 };
 
+
+
 const direcaoOposta = {
   up: 'down',
   down: 'up',
@@ -637,7 +639,7 @@ function configurarZonas() {
   });
 
   // MARCA NO MAPA
-  this.debugZonaCasa = marcarZonaNoMapa(this, this.zonaPizzaria, 0x00ff00);
+  //this.debugZonaCasa = marcarZonaNoMapa(this, this.zonaPizzaria, 0x00ff00);
 
 
   // Colisões entre Personagens
@@ -1010,10 +1012,10 @@ function chegouNaCasa() {
 
     // 2. Define a lista de opções para este momento específico do jogo
     const opcoesDaConversa = [
-    { texto: 'Pedir o telefone', acao: escolherTelefone },
-    { texto: 'Tentar beijá-la', acao: escolherBeijo },
-    { texto: 'Dar tchau', acao: escolherIrEmbora }
-  ];
+      { texto: 'Pedir o telefone', acao: escolherTelefone },
+      { texto: 'Tentar beijá-la', acao: escolherBeijo },
+      { texto: 'Dar tchau', acao: escolherIrEmbora }
+    ];
 
     // 3. Chama a função reutilizável para mostrar as opções na tela
     mostrarOpcoes(this, opcoesDaConversa);
@@ -2350,7 +2352,7 @@ Foi rápido, mas suficiente para transformar aquele encontro em algo inesquecív
                         gameState.missaoAtual = 'levarParaCasaTerceiroEncontro';
                         gameState.subMissao = null;
                         mostrarObjetivo.call(this, "Voltar para casa 🏡", 4000);
-                         atualizarMarcadorMissao.call(this);
+                        atualizarMarcadorMissao.call(this);
 
                       });
 
@@ -2397,122 +2399,123 @@ function levarParaCasaTerceiroEncontro() {
   ], () => {
 
     if (this.dialogo && this.dialogo.bg) {
-        this.dialogo.bg.setVisible(false);
-        this.dialogo.nome.setVisible(false);
-        this.dialogo.texto.setVisible(false);
-      }
+      this.dialogo.bg.setVisible(false);
+      this.dialogo.nome.setVisible(false);
+      this.dialogo.texto.setVisible(false);
+    }
 
-      // 2. Define a lista de opções para este momento específico do jogo
-      const opcoesDaConversa = [
-        { texto: 'Beijala', acao: beijala },
-        { texto: 'Dar tchau', acao: darTchau }
-      ];
+    // 2. Define a lista de opções para este momento específico do jogo
+    const opcoesDaConversa = [
+      { texto: 'Beijala', acao: beijala },
+      { texto: 'Dar tchau', acao: darTchau }
+    ];
 
-      // 3. Chama a função reutilizável para mostrar as opções na tela
-      mostrarOpcoes(this, opcoesDaConversa);
+    this.playerEle.body.moves = false;
+    this.playerEla.body.moves = false;
+    pararPersonagens.call(this);
+    gameState.personagemAtual = null;
+
+    // 3. Chama a função reutilizável para mostrar as opções na tela
+    mostrarOpcoes(this, opcoesDaConversa);
 
   });
 
 }
 
-function beijala(){
+function beijala() {
+  olharUmParaOutro.call(this, getNpc(this), getPersonagemAtivo(this));
+  gameState.dialogoAtivo = true;
 
-  
-    
-    olharUmParaOutro.call(this, getNpc(this), getPersonagemAtivo(this));
-    gameState.dialogoAtivo = true;
+  // 1. Faz os dois se aproximarem (um passo à frente)
+  this.tweens.add({
+    targets: this.playerEle,
+    x: this.playerEla.x + 18, // Ajusta para ficarem bem próximos
+    duration: 1000,
+    ease: 'Power1'
+  });
 
-    
+  this.tweens.add({
+    targets: this.playerEla,
+    x: this.playerEla.x + 5, // Pequeno ajuste de posição
+    duration: 1000,
+    ease: 'Power1',
+    onComplete: () => {
+      // 2. Cria o coração acima deles quando se tocam
+      const coracao = this.add.text(
+        (this.playerEle.x + this.playerEla.x) / 2,
+        this.playerEla.y - 40,
+        '❤️',
+        { fontSize: '40px' }
+      ).setOrigin(0.5).setDepth(10000);
 
-        // 1. Faz os dois se aproximarem (um passo à frente)
-        this.tweens.add({
-          targets: this.playerEle,
-          x: this.playerEla.x + 18, // Ajusta para ficarem bem próximos
-          duration: 1000,
-          ease: 'Power1'
-        });
+      // 3. Efeito de Pulsar (Coração batendo)
+      this.tweens.add({
+        targets: coracao,
+        scale: 1.5,       // Aumenta o tamanho
+        duration: 400,    // Velocidade da batida
+        yoyo: true,       // Volta ao tamanho original
+        repeat: 5,        // Quantas vezes vai pulsar
+        onComplete: () => {
+          // 4. Finaliza a cena e segue para a próxima missão
+          this.tweens.add({
+            targets: coracao,
+            alpha: 0,
+            duration: 500,
+            onComplete: () => {
+              coracao.destroy();
+              gameState.love += 30;
+              atualizarHud.call(this);
+              this.playerEle.body.moves = true;
+              this.playerEla.body.moves = true;
+              gameState.missaoAtual = null;
+              gameState.subMissao = null;
 
-        this.tweens.add({
-          targets: this.playerEla,
-          x: this.playerEla.x + 5, // Pequeno ajuste de posição
-          duration: 1000,
-          ease: 'Power1',
-          onComplete: () => {
-            // 2. Cria o coração acima deles quando se tocam
-            const coracao = this.add.text(
-              (this.playerEle.x + this.playerEla.x) / 2,
-              this.playerEla.y - 40,
-              '❤️',
-              { fontSize: '40px' }
-            ).setOrigin(0.5).setDepth(10000);
+              iniciarDialogo.call(this, [
+                { nome: 'Ana', texto: 'Tchau, boa noite.' },
+              ], () => {
 
-            // 3. Efeito de Pulsar (Coração batendo)
-            this.tweens.add({
-              targets: coracao,
-              scale: 1.5,       // Aumenta o tamanho
-              duration: 400,    // Velocidade da batida
-              yoyo: true,       // Volta ao tamanho original
-              repeat: 5,        // Quantas vezes vai pulsar
-              onComplete: () => {
-                // 4. Finaliza a cena e segue para a próxima missão
-                this.tweens.add({
-                  targets: coracao,
-                  alpha: 0,
-                  duration: 500,
-                  onComplete: () => {
-                    coracao.destroy();
-                    gameState.love += 30;
-                    atualizarHud.call(this);
-                    this.playerEle.body.moves = true;
-                    gameState.missaoAtual = null;
-                    gameState.subMissao = null;
-                    //mostrarObjetivo.call(this, "Ir até a lanchonete do Alemão", 4000);
-                    //atualizarMarcadorMissao.call(this);
-                    iniciarDialogo.call(this, [
-                      { nome: 'Netinho', texto: 'Aeeeeee, achei que não ia acontecer nunca isso 😂' },
-                      { nome: 'Luciano', texto: 'Eu ja não aguentava mais jogar 🤣🤣' },
-                      { nome: 'Netinho', texto: 'Pessoal, ja vamos indo, podem ficar avontade rsrsrs' },
-                      { nome: 'Alexandre', texto: 'Até amanhã' },
-
-                    ], () => {
-
-                      gameState.missaoAtual = null;
-                      gameState.subMissao = null;
-                      this.playerEla.body.moves = true;
-                      iniciarJornadaNPC(this.npcP1, 'npc1', this);
-                      iniciarJornadaNPC(this.npcP2, 'npc2', this);
-                      this.playerEla.setPosition(1380, 560);
-                      this.playerEle.setPosition(1339, 560);
-
-                     
-
-                    });
-
-                  }
+                gameState.missaoAtual = null;
+                gameState.subMissao = null;
+                pararPersonagens.call(this);
+                this.cameras.main.fadeOut(600, 0, 0, 0);
+                this.time.delayedCall(650, () => {
+                  this.cameras.main.fadeIn(1, 0, 0, 0);
+                  this.playerEle.setVisible(false);
+                  mudarCameraDePlayer(this.cameras.main, this.playerEla, this);
                 });
-              }
-            });
-          }
-        });
+
+              });
+
+            }
+          });
+        }
+      });
+    }
+  });
 
 }
 
-function darTchau(){
+function darTchau() {
 
-    pararPersonagens.call(this);
-    gameState.personagemAtual = 'ele';
-    moverPlayer.call(this, {
-      personagem: this.playerEla,
-      tipo: 'ela',
-      x: 274,
-      y: 1808,
-      onFinish: () => {
-        gameState.dialogoAtivo = false;
-        gameState.love += 5;
-        atualizarHud.call(this);
-      }
-    });
-
+  pararPersonagens.call(this);
+  mudarCameraDePlayer(this.cameras.main, this.playerEle, this);
+  moverPlayer.call(this, {
+    personagem: this.playerEla,
+    tipo: 'ela',
+    x: 274,
+    y: 1808,
+    onFinish: () => {
+      gameState.dialogoAtivo = false;
+      gameState.love += 5;
+      atualizarHud.call(this);
+      this.cameras.main.fadeOut(600, 0, 0, 0);
+      this.time.delayedCall(650, () => {
+        this.cameras.main.fadeIn(1, 0, 0, 0);
+        this.playerEle.setVisible(false);
+        mudarCameraDePlayer(this.cameras.main, this.playerEla, this);
+      });
+    }
+  });
 }
 
 function iniciarJornadaNPC(npc, tipoAnimacao, cena) {
