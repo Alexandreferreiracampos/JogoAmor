@@ -2207,6 +2207,8 @@ Foi rápido, mas suficiente para transformar aquele encontro em algo inesquecív
                     gameState.missaoAtual = null;
                     gameState.subMissao = null;
                      this.playerEla.body.moves = true;
+                     iniciarJornadaNPC(this.npcP1, 'npc1', this);
+                      iniciarJornadaNPC(this.npcP2, 'npc2', this);
                     //mostrarObjetivo.call(this, "Ir até a lanchonete do Alemão", 4000);
                     //atualizarMarcadorMissao.call(this);
 
@@ -2226,6 +2228,45 @@ Foi rápido, mas suficiente para transformar aquele encontro em algo inesquecív
   // 4. Ativa o escutador de teclado
   this.input.keyboard.on('keydown-SPACE', fecharTela);
 
+}
+
+/**
+ * Inicia a jornada do NPC em duas etapas.
+ * @param {Phaser.Physics.Arcade.Sprite} npc - O sprite do NPC a ser movido.
+ * @param {string} tipoAnimacao - O prefixo da animação (ex: 'npc1').
+ * @param {object} cena - A referência para a sua cena do Phaser (geralmente 'this').
+ */
+function iniciarJornadaNPC(npc, tipoAnimacao, cena) {
+  // Posições de destino
+  const pos1 = { x: 1569, y: 743 };
+  const pos3 = { x: 1576, y: 777 };
+  const pos2 = { x: 3184, y: 771 };
+
+  console.log(`Iniciando movimento do NPC para a Posição 1: (${pos1.x}, ${pos1.y})`);
+
+  // 1. Mover para a primeira posição
+  moverPlayer.call(cena, {
+    personagem: npc,
+    tipo: tipoAnimacao,
+     x: (npc === this.npcP1) ? pos3.x : pos1.x,
+    y: pos1.y,
+    // O callback onFinish será executado quando o primeiro movimento terminar
+    onFinish: () => {
+      console.log(`Chegou à Posição 1. Iniciando movimento para a Posição 2: (${pos2.x}, ${pos2.y})`);
+      
+      // 2. Mover para a segunda posição
+      moverPlayer.call(cena, {
+        personagem: npc,
+        tipo: tipoAnimacao,
+        x: pos2.x,
+        y: pos2.y,
+        onFinish: () => {
+          console.log("Jornada do NPC concluída!");
+          // Aqui você pode adicionar qualquer lógica para quando o NPC chegar ao destino final.
+        }
+      });
+    }
+  });
 }
 
 // Atalhos de DEV
