@@ -309,7 +309,7 @@ function update() {
   if (gameState.dialogoAtivo) return;
 
   // 3. Lógica de Seguimento
-  const missoesDeSeguir = ['levarParaCasa', 'irPizzaria', 'elaSegueEle', 'levarParaCasaSegundoEncontro', 'irParaSaladeAula', 'finalRecreio', 'dialogoAlemao'];
+  const missoesDeSeguir = ['levarParaCasa', 'irPizzaria', 'elaSegueEle', 'levarParaCasaSegundoEncontro', 'irParaSaladeAula', 'finalRecreio', 'dialogoAlemao', 'voltarCasaTerceiroEncontro'];
 
   if (npc && (missoesDeSeguir.includes(gameState.missaoAtual) || missoesDeSeguir.includes(gameState.subMissao))) {
     const distancia = Phaser.Math.Distance.Between(npc.x, npc.y, player.x, player.y);
@@ -523,7 +523,7 @@ function configurarZonas() {
   });
 
   // Zona Pizzaria
-  this.zonaPizzaria = this.add.zone(2364, 660, 40, 20);
+  this.zonaPizzaria = this.add.zone(2098, 683, 50, 50);
   this.physics.world.enable(this.zonaPizzaria);
   this.zonaPizzaria.body.setAllowGravity(false);
 
@@ -634,7 +634,7 @@ function configurarZonas() {
   });
 
   // MARCA NO MAPA
-  this.debugZonaCasa = marcarZonaNoMapa(this, this.zonaRecreio, 0x00ff00);
+  this.debugZonaCasa = marcarZonaNoMapa(this, this.zonaPizzaria, 0x00ff00);
 
 
   // Colisões entre Personagens
@@ -896,8 +896,8 @@ function iniciarDialogoPizza() {
   atualizarMarcadorMissao.call(this);
   pararPersonagens.call(this);
 
-  this.playerEla.setPosition(2342, 682);
-  this.playerEle.setPosition(2384, 682);
+  this.playerEla.setPosition(2224, 690);
+  this.playerEle.setPosition(2128, 690);
 
   forcarDirecao(this.playerEle, 'ele', 'left');
   forcarDirecao(this.playerEla, 'ela', 'right');
@@ -2224,13 +2224,19 @@ Foi rápido, mas suficiente para transformar aquele encontro em algo inesquecív
                       { nome: 'Ana', texto: 'Sei, eu vi o jeito que você estava me olhando tá rapaizinho' },
                       { nome: 'Alexandre', texto: 'Eu estava vendo vendo o tanto que você estava dando risada e me abraçando toda hora rsrr inclusive me dando beijos no rosto 😘' },
                       { nome: 'Ana', texto: 'Eu estava esperando você tomar iniciativa uai rsrsrsrr' },
-                      { nome: 'Alexandre', texto: 'Eu ia, mas você não soube esperar kkkkk. Mas que bom que você não esperou, provavelmente eu não tia ter corragem mesmo rssrrs' },
-                      { nome: 'Ana', texto: 'Mas logo você, qe' },
+                      { nome: 'Alexandre', texto: 'Eu ia, mas você não soube esperar kkkkk. Mas que bom que você não esperou, provavelmente eu não ia ter corragem mesmo rssrrs' },
+                      { nome: 'Ana', texto: 'Pelo jeito que estava indo acho que não ia mesmo 😂' },
+                      { nome: 'Alexandre', texto: 'Gostei muito do beijo, só reforçou oque eu estava sentindo por você'},
+                      { nome: 'Ana', texto: 'Quem bom, eu gostei muito tambem, mesmo eu tendo que forçar um pouco abarra'},
+                      { nome: 'Ana', texto: 'Acho que eu preciso ir agora, ja esta muito tarde mesmo.'},
+                      { nome: 'Alexandre', texto: 'Que pena, queria ficar mais um pouco com você.'},
+                      { nome: 'Ana', texto: 'Vamos indo, ai você aproveita esse resto de tempo'},
+                      { nome: 'Alexandre', texto: 'Então vamos'},
                     ], () => {
 
-                    gameState.missaoAtual = null;
+                    gameState.missaoAtual = 'voltarCasaTerceiroEncontro';
                     gameState.subMissao = null;
-                     mostrarObjetivo.call(this, "Voltar para casa 🏡", 4000);
+                    mostrarObjetivo.call(this, "Voltar para casa 🏡", 4000);
                      
                     });
                     
