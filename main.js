@@ -176,7 +176,7 @@ function create() {
   this.input.keyboard.on('keydown-FIVE', () => pularescola.call(this));
   this.input.keyboard.on('keydown-SIX', () => enviarMensagemAlexandre.call(this));
   this.input.keyboard.on('keydown-SEVEN', () => encontroPracaterere.call(this));
-  this.input.keyboard.on('keydown-EIGHT', () => dialogoAlemao.call(this));
+  this.input.keyboard.on('keydown-EIGHT', () => levarParaCasaTerceiroEncontro.call(this));
   // 2. Configuração do Mapa (APENAS UMA VEZ)
   const map = this.make.tilemap({ key: 'mapa' });
   const tileset = map.addTilesetImage(map.tilesets[0].name, 'tiles');
@@ -309,7 +309,7 @@ function update() {
   if (gameState.dialogoAtivo) return;
 
   // 3. Lógica de Seguimento
-  const missoesDeSeguir = ['levarParaCasa', 'irPizzaria', 'elaSegueEle', 'levarParaCasaSegundoEncontro', 'irParaSaladeAula', 'finalRecreio', 'dialogoAlemao', 'voltarCasaTerceiroEncontro'];
+  const missoesDeSeguir = ['levarParaCasa', 'irPizzaria', 'elaSegueEle', 'levarParaCasaSegundoEncontro', 'irParaSaladeAula', 'finalRecreio', 'dialogoAlemao', 'levarParaCasaTerceiroEncontro'];
 
   if (npc && (missoesDeSeguir.includes(gameState.missaoAtual) || missoesDeSeguir.includes(gameState.subMissao))) {
     const distancia = Phaser.Math.Distance.Between(npc.x, npc.y, player.x, player.y);
@@ -354,12 +354,9 @@ function update() {
     player.anims.stop();
   }
 
-  // 5. Ajuste de Profundidade (Y-sorting)
-  this.playerEla.setDepth(this.playerEla.y);
-  this.playerEle.setDepth(this.playerEle.y);
 
   console.log(
-    `${Math.floor(this.playerEla.x)}, ${Math.floor(this.playerEla.y)}`
+    `${Math.floor(player.x)}, ${Math.floor(player.y)}`
   );
 }
 
@@ -527,7 +524,7 @@ function configurarZonas() {
   this.physics.world.enable(this.zonaPizzaria);
   this.zonaPizzaria.body.setAllowGravity(false);
 
-  this.physics.add.overlap(this.playerEla, this.zonaPizzaria, () => {
+  this.physics.add.overlap(this.playerEle, this.zonaPizzaria, () => {
     if (gameState.missaoAtual === 'irPizzaria' && gameState.subMissao === 'elaSegueEle' && !gameState.dialogoAtivo) {
       iniciarDialogoPizza.call(this);
     }
@@ -548,6 +545,12 @@ function configurarZonas() {
   this.physics.add.overlap(this.playerEle, this.zonaCasa, () => {
     if (gameState.missaoAtual === 'levarParaCasaSegundoEncontro' && !gameState.dialogoAtivo) {
       chegouNaCasaSegundoEncontro.call(this);
+    }
+  });
+
+  this.physics.add.overlap(this.playerEle, this.zonaCasa, () => {
+    if (gameState.missaoAtual === 'levarParaCasaTerceiroEncontro' && !gameState.dialogoAtivo) {
+      levarParaCasaTerceiroEncontro.call(this);
     }
   });
 
@@ -693,6 +696,7 @@ function atualizarMarcadorMissao() {
   else if (gameState.missaoAtual === 'finalRecreio') zonaAlvo = this.zonaSala;
   else if (gameState.missaoAtual === 'irparamesa') zonaAlvo = this.zonaAlemao;
   else if (gameState.missaoAtual === 'irLanchoneteAlemao') zonaAlvo = this.zonaAlemao;
+  else if (gameState.missaoAtual === 'levarParaCasaTerceiroEncontro') zonaAlvo = this.zonaCasa;
 
   if (!zonaAlvo) return;
 
@@ -896,11 +900,11 @@ function iniciarDialogoPizza() {
   atualizarMarcadorMissao.call(this);
   pararPersonagens.call(this);
 
-  this.playerEla.setPosition(2224, 690);
-  this.playerEle.setPosition(2128, 690);
+  this.playerEla.setPosition(2128, 685);
+  this.playerEle.setPosition(2064, 685);
 
-  forcarDirecao(this.playerEle, 'ele', 'left');
-  forcarDirecao(this.playerEla, 'ela', 'right');
+  forcarDirecao(this.playerEle, 'ele', 'right');
+  forcarDirecao(this.playerEla, 'ela', 'left');
 
   iniciarDialogo.call(this, [
     { nome: 'Alexandre', texto: 'Bora pedir uma pizza então? 😄 Qual sabor você curte?' },
@@ -997,11 +1001,26 @@ function chegouNaCasa() {
     { nome: 'Alexandre', texto: 'Gostei muito também, Ana. A gente se vê na escola?' },
     { nome: 'Ana', texto: 'Com certeza! 😊' }
   ], () => {
-    mostrarOpcoesConverCasa.call(this);
+    // Limpa qualquer diálogo de texto que esteja ativo
+    if (this.dialogo && this.dialogo.bg) {
+      this.dialogo.bg.setVisible(false);
+      this.dialogo.nome.setVisible(false);
+      this.dialogo.texto.setVisible(false);
+    }
+
+    // 2. Define a lista de opções para este momento específico do jogo
+    const opcoesDaConversa = [
+    { texto: 'Pedir o telefone', acao: escolherTelefone },
+    { texto: 'Tentar beijá-la', acao: escolherBeijo },
+    { texto: 'Dar tchau', acao: escolherIrEmbora }
+  ];
+
+    // 3. Chama a função reutilizável para mostrar as opções na tela
+    mostrarOpcoes(this, opcoesDaConversa);
   });
 }
 
-function mostrarOpcoesConverCasa() {
+function mostrarOpcoesConverCasa2() {
   gameState.dialogoAtivo = true;
   gameState.missaoAtual = 'novaMissao';
   pararPersonagens.call(this);
@@ -1062,6 +1081,67 @@ function mostrarOpcoesConverCasa() {
   });
 }
 
+function mostrarOpcoes(cena, opcoes) {
+  // Limpa quaisquer botões de opções que já existam na tela para evitar sobreposição.
+  if (cena.botoesOpcoes && cena.botoesOpcoes.length > 0) {
+    console.log("Limpando botões de opções anteriores.");
+    cena.botoesOpcoes.forEach(botao => {
+      if (botao.bg) botao.bg.destroy();
+      if (botao.txt) botao.txt.destroy();
+    });
+  }
+  cena.botoesOpcoes = []; // Reinicia o array
+
+  // Configurações de layout para os botões
+  const larguraBotao = 400;
+  const alturaBotao = 50;
+  const espacamento = 20;
+  const totalAltura = opcoes.length * (alturaBotao + espacamento) - espacamento;
+  const inicioY = (cena.scale.height / 2) - (totalAltura / 2);
+
+  // Itera sobre as opções fornecidas para criar cada botão
+  opcoes.forEach((opcao, index) => {
+    const x = cena.scale.width / 2;
+    const y = inicioY + index * (alturaBotao + espacamento);
+
+    // Cria o fundo retangular do botão
+    const bg = cena.add.rectangle(x, y, larguraBotao, alturaBotao, 0x000000, 0.8)
+      .setInteractive({ useHandCursor: true })
+      .setScrollFactor(0) // Garante que os botões fiquem fixos na tela, mesmo se a câmera se mover
+      .setDepth(10000);   // Profundidade alta para garantir que fique na frente de outros elementos
+
+    // Cria o texto do botão
+    const txt = cena.add.text(x, y, opcao.texto, {
+      fontSize: '24px',
+      fontFamily: 'Arial', // É bom definir uma fonte
+      color: '#ffffff'
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(10001);
+
+    // Efeitos de mouse para feedback visual
+    bg.on('pointerover', () => bg.setFillStyle(0x333333, 1));
+    bg.on('pointerout', () => bg.setFillStyle(0x000000, 0.8));
+
+    // Ação principal ao clicar no botão
+    bg.on('pointerdown', () => {
+      // 1. Remove todos os botões da tela para limpar a interface
+      cena.botoesOpcoes.forEach(b => {
+        b.bg.destroy();
+        b.txt.destroy();
+      });
+      cena.botoesOpcoes = [];
+
+      // 2. Executa a função de callback específica para a opção clicada
+      // Usa .call(cena) para garantir que o 'this' dentro da ação seja a cena
+      if (opcao.acao) {
+        opcao.acao.call(cena);
+      }
+    });
+
+    // Armazena a referência do botão criado
+    cena.botoesOpcoes.push({ bg, txt });
+  });
+}
+
 function escolherBeijo() {
   iniciarDialogo.call(this, [
     { nome: 'Alexandre', texto: '(Você tenta se aproximar para um beijo)' },
@@ -1070,7 +1150,24 @@ function escolherBeijo() {
     { nome: 'Alexandre', texto: 'Desculpe, acho que me emplguei um pouco rsrsr' },
     { nome: 'Ana', texto: 'Relaxa 😊' }
   ], () => {
-    this.time.delayedCall(100, () => { mostrarOpcoesConverCasa.call(this); });
+    this.time.delayedCall(100, () => {
+      if (this.dialogo && this.dialogo.bg) {
+        this.dialogo.bg.setVisible(false);
+        this.dialogo.nome.setVisible(false);
+        this.dialogo.texto.setVisible(false);
+      }
+
+      // 2. Define a lista de opções para este momento específico do jogo
+      const opcoesDaConversa = [
+        { texto: 'Pedir o telefone', acao: escolherTelefone },
+        { texto: 'Dar tchau e ir embora', acao: escolherIrEmbora }
+      ];
+
+      // 3. Chama a função reutilizável para mostrar as opções na tela
+      mostrarOpcoes(this, opcoesDaConversa);
+
+
+    });
   });
 }
 
@@ -1079,7 +1176,23 @@ function escolherIrEmbora() {
     { nome: 'Alexandre', texto: 'Vou deixar você entrar. Boa noite, Ana!' },
     { nome: 'Ana', texto: 'Ué, já vai? Você não está esquecendo de me pedir nada não? rsrs' }
   ], () => {
-    this.time.delayedCall(100, () => { mostrarOpcoesConverCasa.call(this); });
+    this.time.delayedCall(100, () => {
+      if (this.dialogo && this.dialogo.bg) {
+        this.dialogo.bg.setVisible(false);
+        this.dialogo.nome.setVisible(false);
+        this.dialogo.texto.setVisible(false);
+      }
+
+      // 2. Define a lista de opções para este momento específico do jogo
+      const opcoesDaConversa = [
+        { texto: 'Pedir o telefone', acao: escolherTelefone },
+        { texto: 'Tentar beijá-la', acao: escolherBeijo },
+      ];
+
+      // 3. Chama a função reutilizável para mostrar as opções na tela
+      mostrarOpcoes(this, opcoesDaConversa);
+
+    });
   });
 }
 
@@ -2077,10 +2190,10 @@ function fadebeijo() {
   this.time.delayedCall(650, () => {
     this.cameras.main.fadeIn(1, 0, 0, 0);
     antesdobeijo.call(this, 200);;
-    
-    
-  this.playerEla.body.moves = false;
-  this.pararPersonagens = true;
+
+
+    this.playerEla.body.moves = false;
+    pararPersonagens.call(this);
 
   });
 
@@ -2208,38 +2321,39 @@ Foi rápido, mas suficiente para transformar aquele encontro em algo inesquecív
 
                     ], () => {
 
-                    gameState.missaoAtual = null;
-                    gameState.subMissao = null;
-                     this.playerEla.body.moves = true;
-                     iniciarJornadaNPC(this.npcP1, 'npc1', this);
-                     iniciarJornadaNPC(this.npcP2, 'npc2', this);
-                     this.playerEla.setPosition(1380, 560);
-                     this.playerEle.setPosition(1339, 560);
+                      gameState.missaoAtual = null;
+                      gameState.subMissao = null;
+                      this.playerEla.body.moves = true;
+                      iniciarJornadaNPC(this.npcP1, 'npc1', this);
+                      iniciarJornadaNPC(this.npcP2, 'npc2', this);
+                      this.playerEla.setPosition(1380, 560);
+                      this.playerEle.setPosition(1339, 560);
 
-                     iniciarDialogo.call(this, [
-                     
-                      { nome: 'Alexandre', texto: 'Então quem estava com segundas intenções era você rsrsr' },
-                      { nome: 'Ana', texto: 'Porque eu? Quem estava querendo me beijar mais não tinha corragem era você 😆' },
-                      { nome: 'Alexandre', texto: 'Eu nada, eu estava deboa qui, so conversando mesmo, sem nenhuma intenção a não ser te conhecer melhor 😜' },
-                      { nome: 'Ana', texto: 'Sei, eu vi o jeito que você estava me olhando tá rapaizinho' },
-                      { nome: 'Alexandre', texto: 'Eu estava vendo vendo o tanto que você estava dando risada e me abraçando toda hora rsrr inclusive me dando beijos no rosto 😘' },
-                      { nome: 'Ana', texto: 'Eu estava esperando você tomar iniciativa uai rsrsrsrr' },
-                      { nome: 'Alexandre', texto: 'Eu ia, mas você não soube esperar kkkkk. Mas que bom que você não esperou, provavelmente eu não ia ter corragem mesmo rssrrs' },
-                      { nome: 'Ana', texto: 'Pelo jeito que estava indo acho que não ia mesmo 😂' },
-                      { nome: 'Alexandre', texto: 'Gostei muito do beijo, só reforçou oque eu estava sentindo por você'},
-                      { nome: 'Ana', texto: 'Quem bom, eu gostei muito tambem, mesmo eu tendo que forçar um pouco abarra'},
-                      { nome: 'Ana', texto: 'Acho que eu preciso ir agora, ja esta muito tarde mesmo.'},
-                      { nome: 'Alexandre', texto: 'Que pena, queria ficar mais um pouco com você.'},
-                      { nome: 'Ana', texto: 'Vamos indo, ai você aproveita esse resto de tempo'},
-                      { nome: 'Alexandre', texto: 'Então vamos'},
-                    ], () => {
+                      iniciarDialogo.call(this, [
 
-                    gameState.missaoAtual = 'voltarCasaTerceiroEncontro';
-                    gameState.subMissao = null;
-                    mostrarObjetivo.call(this, "Voltar para casa 🏡", 4000);
-                     
-                    });
-                    
+                        { nome: 'Alexandre', texto: 'Então quem estava com segundas intenções era você rsrsr' },
+                        { nome: 'Ana', texto: 'Porque eu? Quem estava querendo me beijar mais não tinha corragem era você 😆' },
+                        { nome: 'Alexandre', texto: 'Eu nada, eu estava deboa qui, so conversando mesmo, sem nenhuma intenção a não ser te conhecer melhor 😜' },
+                        { nome: 'Ana', texto: 'Sei, eu vi o jeito que você estava me olhando tá rapaizinho' },
+                        { nome: 'Alexandre', texto: 'Eu estava vendo vendo o tanto que você estava dando risada e me abraçando toda hora rsrr inclusive me dando beijos no rosto 😘' },
+                        { nome: 'Ana', texto: 'Eu estava esperando você tomar iniciativa uai rsrsrsrr' },
+                        { nome: 'Alexandre', texto: 'Eu ia, mas você não soube esperar kkkkk. Mas que bom que você não esperou, provavelmente eu não ia ter corragem mesmo rssrrs' },
+                        { nome: 'Ana', texto: 'Pelo jeito que estava indo acho que não ia mesmo 😂' },
+                        { nome: 'Alexandre', texto: 'Gostei muito do beijo, só reforçou oque eu estava sentindo por você' },
+                        { nome: 'Ana', texto: 'Quem bom, eu gostei muito tambem, mesmo eu tendo que forçar um pouco abarra' },
+                        { nome: 'Ana', texto: 'Acho que eu preciso ir agora, ja esta muito tarde mesmo.' },
+                        { nome: 'Alexandre', texto: 'Que pena, queria ficar mais um pouco com você.' },
+                        { nome: 'Ana', texto: 'Vamos indo, ai você aproveita esse resto de tempo' },
+                        { nome: 'Alexandre', texto: 'Então vamos' },
+                      ], () => {
+
+                        gameState.missaoAtual = 'levarParaCasaTerceiroEncontro';
+                        gameState.subMissao = null;
+                        mostrarObjetivo.call(this, "Voltar para casa 🏡", 4000);
+                         atualizarMarcadorMissao.call(this);
+
+                      });
+
                     });
 
                   }
@@ -2257,22 +2371,160 @@ Foi rápido, mas suficiente para transformar aquele encontro em algo inesquecív
 
 }
 
-/**
- * Inicia a jornada do NPC em duas etapas.
- * @param {Phaser.Physics.Arcade.Sprite} npc - O sprite do NPC a ser movido.
- * @param {string} tipoAnimacao - O prefixo da animação (ex: 'npc1').
- * @param {object} cena - A referência para a sua cena do Phaser (geralmente 'this').
- */
+function levarParaCasaTerceiroEncontro() {
+  gameState.dialogoAtivo = true;
+  pararPersonagens.call(this);
+  gameState.missaoAtual = null;
+  atualizarMarcadorMissao.call(this);
+  this.playerEla.setPosition(520, 1870);
+  this.playerEle.setPosition(550, 1870);
+
+  forcarDirecao(this.playerEle, 'ele', 'left');
+  forcarDirecao(this.playerEla, 'ela', 'right');
+
+  iniciarDialogo.call(this, [
+    { nome: 'Ana', texto: 'Me diverti muito hoje.' },
+    { nome: 'Alexandre', texto: 'Quem bom, eu tambem, de mais 💕' },
+    { nome: 'Ana', texto: 'Posso te falar uma coisa?' },
+    { nome: 'Alexandre', texto: 'Hummm?, claro que pode.' },
+    { nome: 'Ana', texto: 'Eu não estava dando um tempo e nem namorando rsrsrs, so falei aqui pra ver sua reação 😁' },
+    { nome: 'Alexandre', texto: 'Então a noite acanbou de ficar ainda melhor 😍. Será que você pode ficar mais um pouco aqui comigo ?' },
+    { nome: 'Ana', texto: 'Melhor não, minha mãe jaja vem aqui fora 😂' },
+    { nome: 'Alexandre', texto: 'Ta bom rsrsrs, pelomenos posso te ligar mais tarde ?' },
+    { nome: 'Ana', texto: 'Claro que pode' },
+    { nome: 'Alexandre', texto: 'Combinado' },
+    { nome: 'Ana', texto: 'Tchau, boia noite' }
+  ], () => {
+
+    if (this.dialogo && this.dialogo.bg) {
+        this.dialogo.bg.setVisible(false);
+        this.dialogo.nome.setVisible(false);
+        this.dialogo.texto.setVisible(false);
+      }
+
+      // 2. Define a lista de opções para este momento específico do jogo
+      const opcoesDaConversa = [
+        { texto: 'Beijala', acao: beijala },
+        { texto: 'Dar tchau', acao: darTchau }
+      ];
+
+      // 3. Chama a função reutilizável para mostrar as opções na tela
+      mostrarOpcoes(this, opcoesDaConversa);
+
+  });
+
+}
+
+function beijala(){
+
+  
+    
+    olharUmParaOutro.call(this, getNpc(this), getPersonagemAtivo(this));
+    gameState.dialogoAtivo = true;
+
+    
+
+        // 1. Faz os dois se aproximarem (um passo à frente)
+        this.tweens.add({
+          targets: this.playerEle,
+          x: this.playerEla.x + 18, // Ajusta para ficarem bem próximos
+          duration: 1000,
+          ease: 'Power1'
+        });
+
+        this.tweens.add({
+          targets: this.playerEla,
+          x: this.playerEla.x + 5, // Pequeno ajuste de posição
+          duration: 1000,
+          ease: 'Power1',
+          onComplete: () => {
+            // 2. Cria o coração acima deles quando se tocam
+            const coracao = this.add.text(
+              (this.playerEle.x + this.playerEla.x) / 2,
+              this.playerEla.y - 40,
+              '❤️',
+              { fontSize: '40px' }
+            ).setOrigin(0.5).setDepth(10000);
+
+            // 3. Efeito de Pulsar (Coração batendo)
+            this.tweens.add({
+              targets: coracao,
+              scale: 1.5,       // Aumenta o tamanho
+              duration: 400,    // Velocidade da batida
+              yoyo: true,       // Volta ao tamanho original
+              repeat: 5,        // Quantas vezes vai pulsar
+              onComplete: () => {
+                // 4. Finaliza a cena e segue para a próxima missão
+                this.tweens.add({
+                  targets: coracao,
+                  alpha: 0,
+                  duration: 500,
+                  onComplete: () => {
+                    coracao.destroy();
+                    gameState.love += 30;
+                    atualizarHud.call(this);
+                    this.playerEle.body.moves = true;
+                    gameState.missaoAtual = null;
+                    gameState.subMissao = null;
+                    //mostrarObjetivo.call(this, "Ir até a lanchonete do Alemão", 4000);
+                    //atualizarMarcadorMissao.call(this);
+                    iniciarDialogo.call(this, [
+                      { nome: 'Netinho', texto: 'Aeeeeee, achei que não ia acontecer nunca isso 😂' },
+                      { nome: 'Luciano', texto: 'Eu ja não aguentava mais jogar 🤣🤣' },
+                      { nome: 'Netinho', texto: 'Pessoal, ja vamos indo, podem ficar avontade rsrsrs' },
+                      { nome: 'Alexandre', texto: 'Até amanhã' },
+
+                    ], () => {
+
+                      gameState.missaoAtual = null;
+                      gameState.subMissao = null;
+                      this.playerEla.body.moves = true;
+                      iniciarJornadaNPC(this.npcP1, 'npc1', this);
+                      iniciarJornadaNPC(this.npcP2, 'npc2', this);
+                      this.playerEla.setPosition(1380, 560);
+                      this.playerEle.setPosition(1339, 560);
+
+                     
+
+                    });
+
+                  }
+                });
+              }
+            });
+          }
+        });
+
+}
+
+function darTchau(){
+
+    pararPersonagens.call(this);
+    gameState.personagemAtual = 'ele';
+    moverPlayer.call(this, {
+      personagem: this.playerEla,
+      tipo: 'ela',
+      x: 274,
+      y: 1808,
+      onFinish: () => {
+        gameState.dialogoAtivo = false;
+        gameState.love += 5;
+        atualizarHud.call(this);
+      }
+    });
+
+}
+
 function iniciarJornadaNPC(npc, tipoAnimacao, cena) {
   // Posições de destino
-  const pos1 = { x: 1579, y: 777};
-  const pos1_alt = { x: 1600, y: 728}; // alternativa para outro NPC
+  const pos1 = { x: 1579, y: 777 };
+  const pos1_alt = { x: 1600, y: 728 }; // alternativa para outro NPC
   const pos2 = { x: 3184, y: 771 };
-  const pos2_alt = { x: 3184,y: 728}; // destino alternativo
+  const pos2_alt = { x: 3184, y: 728 }; // destino alternativo
 
   // Define destinos baseado no NPC
   const primeiraPos = (npc === cena.npcP1) ? pos1_alt : pos1;
-  const segundaPos  = (npc === cena.npcP1) ? pos2 : pos2_alt;
+  const segundaPos = (npc === cena.npcP1) ? pos2 : pos2_alt;
 
   console.log(`Iniciando movimento do NPC para (${primeiraPos.x}, ${primeiraPos.y})`);
 
