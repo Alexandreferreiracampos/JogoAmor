@@ -78,13 +78,21 @@ const FRAMES = {
     left: [60, 64, 68],
     right: [63, 67, 71],
     up: [62, 66, 70],
-    idle: 61
+    idle_down: [61, 45],
+    idle_up: [62, 46],
+    idle_left: [60, 44],
+    idle_right: [63, 47],
+    idle: 61 // Frame padrão
   },
   ele: {
     down: [1, 5, 9],
     left: [0, 4, 8],
     right: [3, 7, 11],
     up: [2, 6, 10],
+    idle_down: [1, 37],
+    idle_up: [2, 38],
+    idle_left: [36, 0],
+    idle_right: [3, 39],
     idle: 1
   },
   npc1: {
@@ -336,25 +344,31 @@ function update() {
   // 4. Movimentação do Jogador Ativo
   player.setVelocity(0);
 
-  if (cursors.left.isDown) {
-    player.setVelocityX(-speed);
-    player.anims.play(`${gameState.personagemAtual}-left`, true);
-    player.direction = 'left';
-  } else if (cursors.right.isDown) {
-    player.setVelocityX(speed);
-    player.anims.play(`${gameState.personagemAtual}-right`, true);
-    player.direction = 'right';
-  } else if (cursors.up.isDown) {
-    player.setVelocityY(-speed);
-    player.anims.play(`${gameState.personagemAtual}-up`, true);
-    player.direction = 'up';
-  } else if (cursors.down.isDown) {
-    player.setVelocityY(speed);
-    player.anims.play(`${gameState.personagemAtual}-down`, true);
-    player.direction = 'down';
-  } else {
-    player.anims.stop();
-  }
+  // Dentro da função update(), na parte de movimentação:
+
+if (cursors.left.isDown) {
+  player.setVelocityX(-speed);
+  player.anims.play(`${gameState.personagemAtual}-left`, true);
+  player.lastDirection = 'left'; // Salva a última direção
+} else if (cursors.right.isDown) {
+  player.setVelocityX(speed);
+  player.anims.play(`${gameState.personagemAtual}-right`, true);
+  player.lastDirection = 'right';
+} else if (cursors.up.isDown) {
+  player.setVelocityY(-speed);
+  player.anims.play(`${gameState.personagemAtual}-up`, true);
+  player.lastDirection = 'up';
+} else if (cursors.down.isDown) {
+  player.setVelocityY(speed);
+  player.anims.play(`${gameState.personagemAtual}-down`, true);
+  player.lastDirection = 'down';
+} else {
+  // QUANDO ESTIVER PARADO:
+  player.setVelocity(0);
+  // Se não houver direção salva (início do jogo), assume 'down'
+  const dir = player.lastDirection || 'down';
+  player.anims.play(`${gameState.personagemAtual}-${dir}-idle`, true);
+}
 
 
   console.log(
@@ -2617,27 +2631,35 @@ function encontroPracaterere() {
 // --- 6. MOVIMENTAÇÃO E ANIMAÇÕES ---
 
 function criarAnimacoes(scene) {
-  // Adicione 'npc1' e 'npc2' na lista de tipos
-  const tipos = ['ela', 'ele', 'npc1', 'npc2'];
+  const personagens = ['ela', 'ele', 'npc1', 'npc2'];
+  const direcoes = ['down', 'up', 'left', 'right'];
 
-  tipos.forEach(tipo => {
-    // Define qual sprite usar para cada tipo
-    let spriteKey;
-    if (tipo === 'ela') spriteKey = 'playerEla';
-    else if (tipo === 'ele') spriteKey = 'playerEle';
-    else if (tipo === 'npc1') spriteKey = 'npcP1';
-    else if (tipo === 'npc2') spriteKey = 'npcP2';
-
-    ['down', 'left', 'right', 'up'].forEach(dir => {
+  personagens.forEach(p => {
+    direcoes.forEach(d => {
+      // 1. Animação de Movimento (Caminhada)
       scene.anims.create({
-        key: `${tipo}-${dir}`,
-        frames: scene.anims.generateFrameNumbers(spriteKey, { frames: FRAMES[tipo][dir] }),
+        key: `${p}-${d}`,
+        frames: scene.anims.generateFrameNumbers(`player${p.charAt(0).toUpperCase() + p.slice(1)}`, { 
+          frames: FRAMES[p][d] 
+        }),
         frameRate: 8,
+        repeat: -1
+      });
+
+      // 2. Animação de Parado (Idle) - Usando os frames específicos que você definiu
+      // Certifique-se de que no seu objeto FRAMES existam as chaves: idle_down, idle_up, etc.
+      scene.anims.create({
+        key: `${p}-${d}-idle`,
+        frames: scene.anims.generateFrameNumbers(`player${p.charAt(0).toUpperCase() + p.slice(1)}`, { 
+          frames: FRAMES[p][`idle_${d}`] 
+        }),
+        frameRate: 2, // Velocidade lenta para o efeito de parado
         repeat: -1
       });
     });
   });
 }
+
 
 function olharUmParaOutro(playerAtivo, outro) {
   const direcao = playerAtivo.direction || 'down';
