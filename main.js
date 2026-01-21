@@ -386,8 +386,8 @@ function update() {
     player.anims.play(`${gameState.personagemAtual}-idle_${direcao}`, true);
   }
 
-   this.npcP1.anims.play(`npc1-idle_left`, true);
-   this.npcP2.anims.play(`npc2-idle_right`, true);
+  this.npcP1.anims.play(`npc1-idle_left`, true);
+  this.npcP2.anims.play(`npc2-idle_right`, true);
 
   console.log(
     `${Math.floor(player.x)}, ${Math.floor(player.y)}`
@@ -2446,7 +2446,7 @@ function levarParaCasaTerceiroEncontro() {
 
     this.playerEle.body.moves = false;
     this.playerEla.body.moves = false;
-    pararPersonagens.call(this);
+    //pararPersonagens.call(this);
     gameState.personagemAtual = null;
 
     // 3. Chama a função reutilizável para mostrar as opções na tela
@@ -2459,7 +2459,6 @@ function levarParaCasaTerceiroEncontro() {
 function beijala() {
   olharUmParaOutro.call(this, getNpc(this), getPersonagemAtivo(this));
   gameState.dialogoAtivo = true;
-
   // 1. Faz os dois se aproximarem (um passo à frente)
   this.tweens.add({
     targets: this.playerEle,
@@ -2508,14 +2507,24 @@ function beijala() {
                 { nome: 'Ana', texto: 'Tchau, boa noite.' },
               ], () => {
 
-                gameState.missaoAtual = null;
-                gameState.subMissao = null;
-                pararPersonagens.call(this);
-                this.cameras.main.fadeOut(600, 0, 0, 0);
-                this.time.delayedCall(650, () => {
-                  this.cameras.main.fadeIn(1, 0, 0, 0);
-                  this.playerEle.setVisible(false);
-                  mudarCameraDePlayer(this.cameras.main, this.playerEla, this);
+                gameState.dialogoAtivo = false;
+                this.playerEle.body.moves = false;
+                moverPlayer.call(this, {
+                  personagem: this.playerEla,
+                  tipo: 'ela',
+                  x: 274,
+                  y: 1808,
+                  onFinish: () => {
+                    gameState.dialogoAtivo = false;
+                    gameState.love += 3;
+                    atualizarHud.call(this);
+                    this.cameras.main.fadeOut(600, 0, 0, 0);
+                    this.time.delayedCall(650, () => {
+                    this.cameras.main.fadeIn(1, 0, 0, 0);
+                     mudarCameraDePlayer(this.cameras.main, this.playerEla, this);
+                    this.playerEle.setVisible(false);
+                    });
+                  }
                 });
 
               });
