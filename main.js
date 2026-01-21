@@ -100,6 +100,10 @@ const FRAMES = {
     left: [12, 16, 20],
     right: [15, 19, 23],
     up: [14, 18, 22],
+    idle_down: [13, 15], // Adicionado
+    idle_up: [14, 15],   // Adicionado
+    idle_left: [12, 15], // Adicionado
+    idle_right: [15, 15],// Adicionado
     idle: 13
   },
   npc2: {
@@ -107,6 +111,10 @@ const FRAMES = {
     left: [48, 52, 56],
     right: [51, 55, 59],
     up: [50, 54, 58],
+    idle_down: [49, 49], // Adicionado
+    idle_up: [50, 50],   // Adicionado
+    idle_left: [48, 48], // Adicionado
+    idle_right: [51, 51],// Adicionado
     idle: 49
   }
 };
@@ -181,7 +189,7 @@ function create() {
   // 1. Atalhos de Desenvolvimento
   this.input.keyboard.on('keydown-ONE', () => iniciarMissaoSala.call(this));
   this.input.keyboard.on('keydown-TWO', () => pularParaConversa.call(this));
-  this.input.keyboard.on('keydown-THREE', () => iniciarMissaoPizzaria.call(this));
+  this.input.keyboard.on('keydown-THREE', () => chegaranNaSala.call(this));
   this.input.keyboard.on('keydown-FOUR', () => pularParaCasa.call(this));
   this.input.keyboard.on('keydown-FIVE', () => pularescola.call(this));
   this.input.keyboard.on('keydown-SIX', () => enviarMensagemAlexandre.call(this));
@@ -217,6 +225,9 @@ function create() {
 
   this.physics.add.collider(this.npcP1, layer);
   this.physics.add.collider(this.npcP2, layer);
+
+  this.npcP1.setVisible(false);
+  this.npcP2.setVisible(false);
 
   criarAnimacoes(this);
 
@@ -337,44 +348,42 @@ function update() {
       }
     } else {
       npc.setVelocity(0);
-      npc.anims.stop();
+      // Toca a animação de idle para o NPC também
+      const dx = player.x - npc.x;
+      const dy = player.y - npc.y;
+      let dirNpc = 'down';
+      if (Math.abs(dx) > Math.abs(dy)) {
+        dirNpc = dx > 0 ? 'right' : 'left';
+      } else {
+        dirNpc = dy > 0 ? 'down' : 'up';
+      }
+      npc.anims.play(`${tipoNpc}-idle_${dirNpc}`, true);
     }
   }
-
-  const playerInativo = (gameState.personagemAtual === 'ela') ? this.playerEle : this.playerEla;
-  const tipoInativo = (gameState.personagemAtual === 'ela') ? 'ele' : 'ela';
 
   // 4. Movimentação do Jogador Ativo
   player.setVelocity(0);
 
-  // Dentro da função update(), na parte de movimentação:
-
-if (cursors.left.isDown) {
-  player.setVelocityX(-speed);
-  player.anims.play(`${gameState.personagemAtual}-left`, true);
-  player.lastDirection = 'left'; // Salva a última direção
-} else if (cursors.right.isDown) {
-  player.setVelocityX(speed);
-  player.anims.play(`${gameState.personagemAtual}-right`, true);
-  player.lastDirection = 'right';
-} else if (cursors.up.isDown) {
-  player.setVelocityY(-speed);
-  player.anims.play(`${gameState.personagemAtual}-up`, true);
-  player.lastDirection = 'up';
-} else if (cursors.down.isDown) {
-  player.setVelocityY(speed);
-  player.anims.play(`${gameState.personagemAtual}-down`, true);
-  player.lastDirection = 'down';
-} else {
-  // QUANDO ESTIVER PARADO:
-  player.setVelocity(0);
-  // Se não houver direção salva (início do jogo), assume 'down'
-  const dir = player.lastDirection || 'down';
-  player.anims.play(`${gameState.personagemAtual}-${dir}-idle`, true);
-}
-
-if (playerInativo.body.velocity.x === 0 && playerInativo.body.velocity.y === 0) {
-    playerInativo.anims.play(`${tipoInativo}-${playerInativo.lastDirection || 'down'}-idle`, true);
+  if (cursors.left.isDown) {
+    player.setVelocityX(-speed);
+    player.anims.play(`${gameState.personagemAtual}-left`, true);
+    player.direction = 'left';
+  } else if (cursors.right.isDown) {
+    player.setVelocityX(speed);
+    player.anims.play(`${gameState.personagemAtual}-right`, true);
+    player.direction = 'right';
+  } else if (cursors.up.isDown) {
+    player.setVelocityY(-speed);
+    player.anims.play(`${gameState.personagemAtual}-up`, true);
+    player.direction = 'up';
+  } else if (cursors.down.isDown) {
+    player.setVelocityY(speed);
+    player.anims.play(`${gameState.personagemAtual}-down`, true);
+    player.direction = 'down';
+  } else {
+    // Toca a animação de idle baseada na última direção
+    const direcao = player.direction || 'down';
+    player.anims.play(`${gameState.personagemAtual}-idle_${direcao}`, true);
   }
 
 
@@ -1924,6 +1933,9 @@ function inicioRecreio() {
 
   gameState.missaoAtual = 'dialogoRecreio';
 
+  this.npcP1.setVisible(true);
+  this.npcP2.setVisible(true);
+
   gameState.dialogoAtivo = false;
   mudarCameraDePlayer(this.cameras.main, this.playerEla, this);
   pararPersonagens.call(this);
@@ -2570,6 +2582,7 @@ function iniciarJornadaNPC(npc, tipoAnimacao, cena) {
         y: segundaPos.y,
 
         onFinish: () => {
+          npc.setVisible(false);
           console.log('Jornada do NPC concluída!');
         }
       });
@@ -2638,35 +2651,37 @@ function encontroPracaterere() {
 // --- 6. MOVIMENTAÇÃO E ANIMAÇÕES ---
 
 function criarAnimacoes(scene) {
-  const personagens = ['ela', 'ele', 'npc1', 'npc2'];
-  const direcoes = ['down', 'up', 'left', 'right'];
+  // Adicione 'npc1' e 'npc2' na lista de tipos
+  const tipos = ['ela', 'ele', 'npc1', 'npc2'];
 
-  personagens.forEach(p => {
-    direcoes.forEach(d => {
-      // 1. Animação de Movimento (Caminhada)
+  tipos.forEach(tipo => {
+    // Define qual sprite usar para cada tipo
+    let spriteKey;
+    if (tipo === 'ela') spriteKey = 'playerEla';
+    else if (tipo === 'ele') spriteKey = 'playerEle';
+    else if (tipo === 'npc1') spriteKey = 'npcP1';
+    else if (tipo === 'npc2') spriteKey = 'npcP2';
+
+    ['down', 'left', 'right', 'up'].forEach(dir => {
       scene.anims.create({
-        key: `${p}-${d}`,
-        frames: scene.anims.generateFrameNumbers(`player${p.charAt(0).toUpperCase() + p.slice(1)}`, { 
-          frames: FRAMES[p][d] 
-        }),
+        key: `${tipo}-${dir}`,
+        frames: scene.anims.generateFrameNumbers(spriteKey, { frames: FRAMES[tipo][dir] }),
         frameRate: 8,
         repeat: -1
       });
+    });
 
-      // 2. Animação de Parado (Idle) - Usando os frames específicos que você definiu
-      // Certifique-se de que no seu objeto FRAMES existam as chaves: idle_down, idle_up, etc.
+    // Animações de Idle (Respiração)
+    ['down', 'left', 'right', 'up'].forEach(dir => {
       scene.anims.create({
-        key: `${p}-${d}-idle`,
-        frames: scene.anims.generateFrameNumbers(`player${p.charAt(0).toUpperCase() + p.slice(1)}`, { 
-          frames: FRAMES[p][`idle_${d}`] 
-        }),
-        frameRate: 2, // Velocidade lenta para o efeito de parado
+        key: `${tipo}-idle_${dir}`,
+        frames: scene.anims.generateFrameNumbers(spriteKey, { frames: FRAMES[tipo][`idle_${dir}`] }),
+        frameRate: 2, // Velocidade lenta para efeito de respiração
         repeat: -1
       });
     });
   });
 }
-
 
 function olharUmParaOutro(playerAtivo, outro) {
   const direcao = playerAtivo.direction || 'down';
