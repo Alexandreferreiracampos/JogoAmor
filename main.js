@@ -16,7 +16,7 @@ class TelaInicial extends Phaser.Scene {
     const { width, height } = this.scale;
 
     // Frase principal
-    this.add.text(width / 1.9, height / 4 - 50, 'Aqui foi onde tudo começou ❤️', {
+    this.add.text(width / 1.9, height / 4 - 50, 'Foi aqui, onde tudo começou ❤️', {
       fontSize: '42px',
       fontStyle: 'bold',
       color: '#ffffff',
@@ -31,7 +31,7 @@ class TelaInicial extends Phaser.Scene {
     }).setOrigin(0.5);
 
     // Botão Iniciar História
-    const botao = this.add.text(width / 2, height / 2 + 50, 'Iniciar História', {
+    const botao = this.add.text(width / 2, height / 2 + 50, 'Iniciar', {
       fontSize: '32px',
       color: '#ffd166',
       backgroundColor: '#000000',
@@ -189,7 +189,7 @@ function create() {
   // 1. Atalhos de Desenvolvimento
   this.input.keyboard.on('keydown-ONE', () => iniciarMissaoSala.call(this));
   this.input.keyboard.on('keydown-TWO', () => pularParaConversa.call(this));
-  this.input.keyboard.on('keydown-THREE', () => chegaranNaSala.call(this));
+  this.input.keyboard.on('keydown-THREE', () => iniciarRecreioPedidodeNamoro.call(this));
   this.input.keyboard.on('keydown-FOUR', () => pularParaCasa.call(this));
   this.input.keyboard.on('keydown-FIVE', () => pularescola.call(this));
   this.input.keyboard.on('keydown-SIX', () => enviarMensagemAlexandre.call(this));
@@ -553,6 +553,12 @@ function configurarZonas() {
     }
   });
 
+  this.physics.add.overlap(this.playerEla, this.zonaSala, () => {
+    if (gameState.missaoAtual === 'IrparaEscolaQuartoDia') {
+      iniciarRecreioPedidodeNamoro.call(this);
+    }
+  });
+
   // Zona Pizzaria
   this.zonaPizzaria = this.add.zone(2098, 683, 50, 50);
   this.physics.world.enable(this.zonaPizzaria);
@@ -687,6 +693,9 @@ function configurarZonas() {
     else if (gameState.missaoAtual === 'irParaEscolaSegundaFeira' && gameState.subMissao === 'FalarComAlexandre' && !gameState.dialogoAtivo) {
       conversarSegundaEscola.call(this);
     }
+    else if (gameState.missaoAtual === 'pedidoDeNamoro') {
+      pedidoDeNamoro.call(this);
+    }
   });
 }
 
@@ -731,6 +740,7 @@ function atualizarMarcadorMissao() {
   else if (gameState.missaoAtual === 'irparamesa') zonaAlvo = this.zonaAlemao;
   else if (gameState.missaoAtual === 'irLanchoneteAlemao') zonaAlvo = this.zonaAlemao;
   else if (gameState.missaoAtual === 'levarParaCasaTerceiroEncontro') zonaAlvo = this.zonaCasa;
+  else if (gameState.missaoAtual === 'IrparaEscolaQuartoDia') zonaAlvo = this.zonaSala;
 
   if (!zonaAlvo) return;
 
@@ -1480,17 +1490,22 @@ function atualizarStatusSinal(scene) {
   let temSinalAgora = false;
 
   scene.zonasSinal.forEach(zona => {
-    if (scene.physics.overlap(player, zona)) temSinalAgora = true;
+    if (scene.physics.overlap(player, zona) || gameState.missaoAtual === 'conversarMensagem') temSinalAgora = true;
   });
 
   gameState.sinalAtivo = temSinalAgora;
 
   if (temSinalAgora) {
+
+
     scene.hudSinal.setText('📶 Sinal').setColor('#00ff00');
     // Se a personagem atual for 'ela' e houver mensagem pendente, notifica
     if (gameState.temMensagemPendente && gameState.personagemAtual === 'ela') {
       scene.notificacaoMsg.setVisible(true);
       verificarMensagemMissao.call(scene);
+    } else if (gameState.missaoAtual === 'procurarSinal' && temSinalAgora) {
+      gameState.missaoAtual = 'conversaIniciada';
+      encontrouSinal.call(scene);
     }
 
     // Lógica para o menu de contato após o trabalho
@@ -1501,6 +1516,7 @@ function atualizarStatusSinal(scene) {
     scene.hudSinal.setText('❌ Sem sinal').setColor('#ff4d4d');
     scene.notificacaoMsg.setVisible(false);
   }
+
 }
 
 function abrirMenuContato() {
@@ -2520,9 +2536,10 @@ function beijala() {
                     atualizarHud.call(this);
                     this.cameras.main.fadeOut(600, 0, 0, 0);
                     this.time.delayedCall(650, () => {
-                    this.cameras.main.fadeIn(1, 0, 0, 0);
-                     mudarCameraDePlayer(this.cameras.main, this.playerEla, this);
-                    this.playerEle.setVisible(false);
+                      this.cameras.main.fadeIn(1, 0, 0, 0);
+                      //mudarCameraDePlayer(this.cameras.main, this.playerEla, this);
+                      conversaCelular.call(this);
+                      this.playerEle.setVisible(false);
                     });
                   }
                 });
@@ -2541,7 +2558,6 @@ function beijala() {
 function darTchau() {
 
   pararPersonagens.call(this);
-  mudarCameraDePlayer(this.cameras.main, this.playerEle, this);
   moverPlayer.call(this, {
     personagem: this.playerEla,
     tipo: 'ela',
@@ -2555,11 +2571,207 @@ function darTchau() {
       this.time.delayedCall(650, () => {
         this.cameras.main.fadeIn(1, 0, 0, 0);
         this.playerEle.setVisible(false);
-        mudarCameraDePlayer(this.cameras.main, this.playerEla, this);
+        conversaCelular.call(this);
+        //mudarCameraDePlayer(this.cameras.main, this.playerEla, this);
       });
     }
   });
 }
+
+function conversaCelular() {
+  gameState.missaoAtual = 'conversarMensagem';
+  gameState.dialogoAtivo = true;
+  pararPersonagens.call(this);
+  mostrarObjetivo.call(this, "📩 Nova Mensagem!", 4000);
+  iniciarDialogo.call(this, [
+    { nome: 'Celular📱', texto: '💌 Nova mensagem de Alexandre: ""Oi, cheguei em casa agora, já esta dormindo?"" ' },
+    { nome: 'Celular📱', texto: '💌 Nova mensagem de Ana: ""Oi, ainda não. Acredita que esta fucinonado sinal aqui srsrsrsr"" ' },
+    { nome: 'Celular📱', texto: '💌 Nova mensagem de Alexandre: ""Quem bom 😁, queria falar um pouco com você antes de dormir"" ' },
+    { nome: 'Celular📱', texto: '💌 Nova mensagem de Ana: ""Eu estava esperando sua mensagem mesmo 😊"" ' },
+    { nome: 'Celular📱', texto: '💌 Nova mensagem de Alexandre: ""Tomara que o sinal continue funcionando então rsrsrs"" ' },
+    { nome: 'Celular📱', texto: '💌 Nova mensagem de Ana: ""Oque você está fazendo ai agora ?"" ' },
+    { nome: 'Celular📱', texto: '💌 Nova mensagem de Alexandre: ""Estou aqui fora, conversando com um menina maravilhosa que conheci 😍"" ' },
+    { nome: 'Celular📱', texto: '💌 Nova mensagem de Ana: ""Deve ser maravilhosa mesmo, para estar a essa hora no telefone kkkk"" ' },
+    { nome: 'Celular📱', texto: '💌 Nova mensagem de Alexandre: ""E você? esta fazendo oque ai? ja estava deitada para dormir ?"" ' },
+    { nome: 'Celular📱', texto: '💌 Nova mensagem de Ana: ""Sim, amanhã tem que acordar cedo para ir pro servico"" ' },
+    { nome: 'Celular📱', texto: '💌 Nova mensagem de Alexandre: ""é, eu tambem, se estiver com sono, pode ir dormir, depois agente conversa mais."" ' },
+    { nome: 'Celular📱', texto: '💌 Nova mensagem de Ana: ""Estou de boa ainda, quando eu parar de responder, ou eu dormi ou o sinal caiu 🤣"" ' },
+    { nome: 'Celular📱', texto: '💌 Nova mensagem de Alexandre: ""rsrsr, Queria estar ai com você agora."" ' },
+    { nome: 'Celular📱', texto: '💌 Nova mensagem de Ana: ""❤️"" ' },
+    { nome: 'Celular📱', texto: '💌 Nova mensagem de Alexandre: ""Amanhã na escola podemos conversar algo serio no recreio?"" ' },
+    { nome: 'Celular📱', texto: '💌 Nova mensagem de Ana: ""Claro, não quer falar agora?"" ' },
+    { nome: 'Celular📱', texto: '💌 Nova mensagem de Alexandre: ""Nem tão serio assim, posso esperar até amanha rsrs"" ' },
+    { nome: 'Celular📱', texto: '💌 Nova mensagem de Ana: ""Me deixou curiosa agora 😊 "" ' },
+    { nome: 'Celular📱', texto: '💌 Nova mensagem de Alexandre: ""Sua mãe falou alguma coisa?"" ' },
+    { nome: 'Celular📱', texto: '💌 Nova mensagem de Ana: ""Ela Perguntou que dia ia conhecer você, ja que esta me trazendo todos os dias aqui rsrsrr"" ' },
+    { nome: 'Celular📱', texto: '💌 Nova mensagem de Alexandre: ""Pretendo continuar levando você todos os dias, esta sendo a melhor parte dos meus dias 💕"" ' },
+    { nome: 'Celular📱', texto: '💌 Nova mensagem de Ana: ""é né rsrsr, ja estou ficando com sono 😴"" ' },
+    { nome: 'Celular📱', texto: '💌 Nova mensagem de Alexandre: ""Quer sair ai fora, eu vou ai rapidão pra te dar um beijo 😘"" ' },
+    { nome: 'Celular📱', texto: '💌 Nova mensagem de Ana: ""Não duvido não, você é meio doido mesmo de vir a essa hora aqui de novo 😂"" ' },
+
+  ], () => {
+    gameState.dialogoAtivo = false;
+    gameState.missaoAtual = 'procurarSinal';
+    this.playerEla.body.moves = true;
+    this.playerEle.body.moves = true;
+    mostrarObjetivo.call(this, "Sem sinal, Procure um lugar com sinal.", 4000);
+    this.playerEla.setVisible(true);
+
+    mudarCameraDePlayer(this.cameras.main, this.playerEla, this);
+
+  });
+
+}
+
+function encontrouSinal() {
+
+  iniciarDialogo.call(this, [
+    { nome: 'Celular📱', texto: '💌 Nova mensagem de Alexandre: ""Eu vou mesmo rsrsr"" ' },
+    { nome: 'Celular📱', texto: '💌 Nova mensagem de Alexandre: ""Ana? Esta ai ainda ou dormiu?"" ' },
+    { nome: 'Celular📱', texto: '💌 Nova mensagem de Alexandre: ""Dormiu né 😴"" ' },
+    { nome: 'Celular📱', texto: '💌 Nova mensagem de Ana: ""Oi, desculpe, caiu o sinal aqui, tive que sair aqui fora pra pegar sinal."" ' },
+    { nome: 'Celular📱', texto: '💌 Nova mensagem de Alexandre: ""😂 Vamos dar um jeito de colocar internet ai, ai não precisa ficar dependendo da operadora."" ' },
+    { nome: 'Celular📱', texto: '💌 Nova mensagem de Ana: ""Sim rsrsr. Acho que vou dormir agora, aqui fora esta frio, beijos 😘"" ' },
+    { nome: 'Celular📱', texto: '💌 Nova mensagem de Alexandre: ""Tudo bem, dorme com Deus. 😘"" ' },
+  ], () => {
+    gameState.dialogoAtivo = false;
+    gameState.missaoAtual = null;
+    mostrarObjetivo.call(this, "🛏️.", 4000);
+
+    this.cameras.main.fadeOut(600, 0, 0, 0);
+    this.time.delayedCall(650, () => {
+      this.cameras.main.fadeIn(1, 0, 0, 0);
+        escolaQuartoDia.call(this, 800);
+    });
+   
+  });
+}
+
+function escolaQuartoDia() {
+
+  const overlay = this.add.rectangle(0, 0, this.scale.width, this.scale.height, 0x000000)
+    .setOrigin(0).setScrollFactor(0).setDepth(9000).setAlpha(1);
+
+  const x = this.scale.width / 2 - 160;
+  const y = this.scale.height / 2 - 60;
+
+  const bg = this.add.graphics().fillStyle(0x000000, 0.85).fillRoundedRect(x, y, 320, 120, 16).setScrollFactor(0).setDepth(9100);
+  const texto = this.add.text(x + 70, y + 35, 'No outro dia...', { fontSize: '32px', fontStyle: 'bold', color: '#ffffff' })
+    .setScrollFactor(0).setDepth(9200);
+
+
+  this.time.delayedCall(3500, () => {
+    bg.destroy();
+    texto.destroy();
+    this.tweens.add({
+      targets: overlay,
+      alpha: 0,
+      duration: 700,
+      onComplete: () => {
+        overlay.destroy();
+        gameState.missaoAtual = 'IrparaEscolaQuartoDia';
+        atualizarMarcadorMissao.call(this);
+        mostrarObjetivo.call(this, "Ir para a escola", 4000);
+      }
+    });
+  });
+
+  mudarCameraDePlayer(this.cameras.main, this.playerEla, this)
+}
+
+function iniciarRecreioPedidodeNamoro(){
+
+  this.cameras.main.fadeOut(600, 0, 0, 0);
+    this.time.delayedCall(650, () => {
+      this.cameras.main.fadeIn(1, 0, 0, 0);
+
+        gameState.missaoAtual = 'FalarComAlexndrePedidoNamoro';
+        recreioPedidodeNamoro.call(this, 800);
+    });
+ 
+}
+
+function recreioPedidodeNamoro(){
+
+  
+  this.playerEle.setVisible(true);
+  this.playerEla.body.moves = true;
+
+  gameState.missaoAtual = 'pedidoDeNamoro';
+
+  mudarCameraDePlayer(this.cameras.main, this.playerEla, this);
+  pararPersonagens.call(this);
+
+  this.playerEla.setPosition(2929, 343);
+  this.playerEle.setPosition(2800, 364);
+
+  mudarParaNoite(this, 0);
+
+  const overlay = this.add.rectangle(0, 0, this.scale.width, this.scale.height, 0x000000)
+    .setOrigin(0).setScrollFactor(0).setDepth(9000).setAlpha(1);
+
+  const x = this.scale.width / 2 - 160;
+  const y = this.scale.height / 2 - 60;
+
+  const bg = this.add.graphics().fillStyle(0x000000, 0.85).fillRoundedRect(x, y, 320, 120, 16).setScrollFactor(0).setDepth(9100);
+  const texto = this.add.text(x + 70, y + 35, '🕒 18:00', { fontSize: '32px', fontStyle: 'bold', color: '#ffffff' })
+    .setScrollFactor(0).setDepth(9200);
+
+  let hora = 18;
+  this.time.addEvent({
+    delay: 600,
+    repeat: 1,
+    callback: () => {
+      hora++;
+      texto.setText(hora === 20 ? 'Recreio' : `🕒 ${hora}:00`);
+    }
+  });
+
+  this.time.delayedCall(3500, () => {
+    bg.destroy();
+    texto.destroy();
+    this.tweens.add({
+      targets: overlay,
+      alpha: 0,
+      duration: 700,
+      onComplete: () => {
+        overlay.destroy();
+        atualizarMarcadorMissao.call(this); 
+      }
+    });
+  });
+
+}
+
+function pedidoDeNamoro(){
+  gameState.missaoAtual = null;
+  olharUmParaOutro.call(this, getPersonagemAtivo(this), getNpc(this));
+  this.playerEla.setPosition(2848, 368);
+  this.playerEle.setPosition(2800, 368);
+  pararPersonagens.call(this);
+  gameState.dialogoAtivo = true;
+
+  iniciarDialogo.call(this, [
+    { nome: 'Alexandre', texto: 'Ana, vou ser direto. Eu estou gostando mutio de você...' },
+    { nome: 'Alexandre', texto: 'Desde o primeiro dia que agente saiu para ir no Paulo, eu não consigo mais tirar você da minha cabeça...' },
+    { nome: 'Ana', texto: 'Aiaia, huum? Oque você quer dizer?' },
+    { nome: 'Alexandre', texto: 'Eu queria te pedir em Namoro ❤️' },
+    { nome: 'Ana', texto: 'Como assim Alexandre 😮 Agente se conhece a tão pouco tempo...' },
+    { nome: 'Ana', texto: 'Alem do mais, eu vou ir em bora para São Paulo final do ano, como agente vai namorar assim?' },
+    { nome: 'Alexandre', texto: 'Se for preciso eu vou pra São Paulo também, eu não me importo.' },
+    { nome: 'Alexandre', texto: 'Uma coisa você precisa saber de min, eu não faço nada sem pensar, e eu estou falando com toda certeza que eu quero muito ficar com você.' },
+    { nome: 'Ana', texto: 'Acho que precisamos de mais um tempo para conversar sobre isso, agora não é um bom momento 😐' },
+    { nome: 'Alexandre', texto: 'Eu não vou desistir de você, a menos que você fale que realemte não queira, e que não sentiu nada diferente por min tambem.' },
+    { nome: 'Ana', texto: 'Menino, você é doido. Não, agente não pode namorar assim do dia pr noite.' },
+  ], () => {
+
+  });
+  
+
+}
+
+
+
 
 function iniciarJornadaNPC(npc, tipoAnimacao, cena) {
   // Posições de destino
