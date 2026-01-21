@@ -341,6 +341,9 @@ function update() {
     }
   }
 
+  const playerInativo = (gameState.personagemAtual === 'ela') ? this.playerEle : this.playerEla;
+  const tipoInativo = (gameState.personagemAtual === 'ela') ? 'ele' : 'ela';
+
   // 4. Movimentação do Jogador Ativo
   player.setVelocity(0);
 
@@ -369,6 +372,10 @@ if (cursors.left.isDown) {
   const dir = player.lastDirection || 'down';
   player.anims.play(`${gameState.personagemAtual}-${dir}-idle`, true);
 }
+
+if (playerInativo.body.velocity.x === 0 && playerInativo.body.velocity.y === 0) {
+    playerInativo.anims.play(`${tipoInativo}-${playerInativo.lastDirection || 'down'}-idle`, true);
+  }
 
 
   console.log(
