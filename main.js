@@ -2748,30 +2748,121 @@ function pedidoDeNamoro(){
   olharUmParaOutro.call(this, getPersonagemAtivo(this), getNpc(this));
   this.playerEla.setPosition(2848, 368);
   this.playerEle.setPosition(2800, 368);
+  forcarDirecao(this.playerEle, 'ele', 'right');
+  forcarDirecao(this.playerEla, 'ela', 'left');
   pararPersonagens.call(this);
   gameState.dialogoAtivo = true;
 
   iniciarDialogo.call(this, [
-    { nome: 'Alexandre', texto: 'Ana, vou ser direto. Eu estou gostando mutio de você...' },
-    { nome: 'Alexandre', texto: 'Desde o primeiro dia que agente saiu para ir no Paulo, eu não consigo mais tirar você da minha cabeça...' },
-    { nome: 'Ana', texto: 'Aiaia, huum? Oque você quer dizer?' },
-    { nome: 'Alexandre', texto: 'Eu queria te pedir em Namoro ❤️' },
-    { nome: 'Ana', texto: 'Como assim Alexandre 😮 Agente se conhece a tão pouco tempo...' },
-    { nome: 'Ana', texto: 'Alem do mais, eu vou ir em bora para São Paulo final do ano, como agente vai namorar assim?' },
-    { nome: 'Alexandre', texto: 'Se for preciso eu vou pra São Paulo também, eu não me importo.' },
-    { nome: 'Alexandre', texto: 'Uma coisa você precisa saber de min, eu não faço nada sem pensar, e eu estou falando com toda certeza que eu quero muito ficar com você.' },
-    { nome: 'Ana', texto: 'Acho que precisamos de mais um tempo para conversar sobre isso, agora não é um bom momento 😐' },
-    { nome: 'Alexandre', texto: 'Eu não vou desistir de você, a menos que você fale que realemte não queira, e que não sentiu nada diferente por min tambem.' },
-    { nome: 'Ana', texto: 'Menino, você é doido. Não, agente não pode namorar assim do dia pr noite.' },
+   { nome: 'Alexandre', texto: 'Ana, vou ser direto. Eu estou gostando muito de você...' },
+{ nome: 'Alexandre', texto: 'Desde o primeiro dia em que a gente saiu para ir no Paulo, eu não consigo mais tirar você da minha cabeça...' },
+{ nome: 'Ana', texto: 'Ai ai… Huum? O que você quer dizer?' },
+{ nome: 'Alexandre', texto: 'Eu queria te pedir em namoro ❤️' },
+{ nome: 'Ana', texto: 'Como assim, Alexandre? 😮 A gente se conhece há tão pouco tempo...' },
+{ nome: 'Ana', texto: 'Além do mais, eu vou embora para São Paulo no final do ano. Como a gente vai namorar assim?' },
+{ nome: 'Alexandre', texto: 'Se for preciso, eu vou para São Paulo também. Eu não me importo.' },
+{ nome: 'Alexandre', texto: 'Uma coisa você precisa saber de mim: eu não faço nada sem pensar. E estou falando com toda certeza que eu quero muito ficar com você.' },
+{ nome: 'Ana', texto: 'Acho que precisamos de mais um tempo para conversar sobre isso. Agora não é um bom momento 😐' },
+{ nome: 'Alexandre', texto: 'Eu não vou desistir de você, a menos que você diga que realmente não quer e que não sentiu nada diferente por mim também.' },
+{ nome: 'Ana', texto: 'Menino, você é doido. A gente não pode namorar assim, do dia para a noite.' },
+{ nome: 'Alexandre', texto: 'Por que não? Eu gosto muito de você. Eu não curto essa ideia de só ficar com alguém...' },
+{nome: 'Alexandre', texto: 'Ainda mais agora que fiquei sabendo que você vai para São Paulo. É uma oportunidade de demonstrar o que sinto por você...' },
+{ nome: 'Alexandre', texto: 'Se você sentir o mesmo e realmente precisar ir, eu vou com você. Falo sério.' },
+{ nome: 'Ana', texto: 'Não achei que era isso que você queria conversar comigo.' },
+{ nome: 'Ana', texto: 'Não sei nem o que te responder agora. Posso pensar um pouco?' },
+{ nome: 'Alexandre', texto: 'Eu queria uma resposta sua agora… vai que você pensa demais e desiste, rsrs.' },
+{ nome: 'Ana', texto: 'E quem disse que eu estou cogitando?' },
+{ nome: 'Alexandre', texto: 'Porque você ainda não disse que não aceita.' },
+{ nome: 'Ana', texto: 'É que eu ainda nem consegui entender direito o que está acontecendo 😮.' },
+{ nome: 'Alexandre', texto: 'Mas e aí? Aceita namorar comigo?' },
+{ nome: 'Ana', texto: 'Tá… tá bom, eu aceito.' },
+{ nome: 'Alexandre', texto: 'Assim eu não quero. Não quero que você se sinta pressionada.' },
+{ nome: 'Ana', texto: 'Não te entendo. Primeiro você fala que quer, agora fala que não quer me pressionar.' },
+{ nome: 'Alexandre', texto: 'Quero que você saiba que estou falando de verdade. Gosto muito de você, mas quero uma resposta verdadeira sua.' },
+{ nome: 'Ana', texto: 'Tá, estou falando sério também. Eu aceito namorar com você, só acho que é muito cedo e que minha mãe vai pirar. Ela nem te conheceu ainda.' },
+{ nome: 'Alexandre', texto: 'Isso a gente resolve. E, por ser cedo, o que importa é se estamos felizes com isso 💕.' },
+{ nome: 'Ana', texto: 'Tá ok 😊 Menino doido.' },
+{ nome: 'Alexandre', texto: '😍' },
+{ nome: 'Ana', texto: 'Vamos voltar para a sala, que a aula já vai começar.' },
+{ nome: 'Alexandre', texto: 'Vamos.' },
+
   ], () => {
+
+     olharUmParaOutro.call(this, getNpc(this), getPersonagemAtivo(this));
+  gameState.dialogoAtivo = true;
+  // 1. Faz os dois se aproximarem (um passo à frente)
+  this.tweens.add({
+    targets: this.playerEle,
+    x: this.playerEla.x + 18, // Ajusta para ficarem bem próximos
+    duration: 1000,
+    ease: 'Power1'
+  });
+
+  this.tweens.add({
+    targets: this.playerEla,
+    x: this.playerEla.x + 5, // Pequeno ajuste de posição
+    duration: 1000,
+    ease: 'Power1',
+    onComplete: () => {
+      // 2. Cria o coração acima deles quando se tocam
+      const coracao = this.add.text(
+        (this.playerEle.x + this.playerEla.x) / 2,
+        this.playerEla.y - 40,
+        '❤️',
+        { fontSize: '40px' }
+      ).setOrigin(0.5).setDepth(10000);
+
+      // 3. Efeito de Pulsar (Coração batendo)
+      this.tweens.add({
+        targets: coracao,
+        scale: 1.5,       // Aumenta o tamanho
+        duration: 400,    // Velocidade da batida
+        yoyo: true,       // Volta ao tamanho original
+        repeat: 5,        // Quantas vezes vai pulsar
+        onComplete: () => {
+          // 4. Finaliza a cena e segue para a próxima missão
+          this.tweens.add({
+            targets: coracao,
+            alpha: 0,
+            duration: 500,
+            onComplete: () => {
+              coracao.destroy();
+              gameState.love += 30;
+              atualizarHud.call(this);
+              this.playerEle.body.moves = true;
+              this.playerEla.body.moves = true;
+              gameState.missaoAtual = null;
+              gameState.subMissao = null;
+
+              iniciarDialogo.call(this, [
+                { nome: 'Ana', texto: 'Tchau, boa noite.' },
+              ], () => {
+
+                gameState.dialogoAtivo = false;
+                this.playerEle.body.moves = false;
+                gameState.love += 3;
+                atualizarHud.call(this);
+                mudarCameraDePlayer(this.cameras.main, this.playerEla, this);
+                iniciarDialogo.call(this, [
+                  { nome: 'Celular📱', texto: '💌 Nova mensagem de Alexandre: ""Boa noite, dorme com Deus meu amor ❤️"" ' },
+                ], () => {});
+
+              });
+
+            }
+          });
+        }
+      });
+    }
+  });
+
+
+
 
   });
   
 
 }
-
-
-
 
 function iniciarJornadaNPC(npc, tipoAnimacao, cena) {
   // Posições de destino
