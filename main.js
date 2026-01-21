@@ -100,10 +100,10 @@ const FRAMES = {
     left: [12, 16, 20],
     right: [15, 19, 23],
     up: [14, 18, 22],
-    idle_down: [13, 15], // Adicionado
-    idle_up: [14, 15],   // Adicionado
-    idle_left: [12, 15], // Adicionado
-    idle_right: [15, 15],// Adicionado
+    idle_down: [13, 25], // Adicionado
+    idle_up: [14, 26],   // Adicionado
+    idle_left: [12, 24], // Adicionado
+    idle_right: [15, 27],// Adicionado
     idle: 13
   },
   npc2: {
@@ -111,10 +111,10 @@ const FRAMES = {
     left: [48, 52, 56],
     right: [51, 55, 59],
     up: [50, 54, 58],
-    idle_down: [49, 49], // Adicionado
-    idle_up: [50, 50],   // Adicionado
-    idle_left: [48, 48], // Adicionado
-    idle_right: [51, 51],// Adicionado
+    idle_down: [49, 41], // Adicionado
+    idle_up: [50, 42],   // Adicionado
+    idle_left: [48, 40], // Adicionado
+    idle_right: [51, 43],// Adicionado
     idle: 49
   }
 };
@@ -386,6 +386,8 @@ function update() {
     player.anims.play(`${gameState.personagemAtual}-idle_${direcao}`, true);
   }
 
+   this.npcP1.anims.play(`npc1-idle_left`, true);
+   this.npcP2.anims.play(`npc2-idle_right`, true);
 
   console.log(
     `${Math.floor(player.x)}, ${Math.floor(player.y)}`
@@ -1940,12 +1942,14 @@ function inicioRecreio() {
   mudarCameraDePlayer(this.cameras.main, this.playerEla, this);
   pararPersonagens.call(this);
 
+
+
   // Use as chaves corretas: npc1 e npc2
   this.npcP1.play('npc1-left');
-  this.npcP1.anims.stop(); // Para ele ficar parado olhando para a esquerda
+  //this.npcP1.anims.stop(); // Para ele ficar parado olhando para a esquerda
 
   this.npcP2.play('npc2-right');
-  this.npcP2.anims.stop(); // Para ele ficar parado olhando para a direita
+  //this.npcP2.anims.stop(); // Para ele ficar parado olhando para a direita
 
   this.playerEle.play('ele-up');
   this.playerEle.anims.stop(); // Para ele ficar parado olhando para a direita
@@ -2038,11 +2042,8 @@ function finalAula() {
       this.playerEle.setVisible(true);
       this.playerEla.setVisible(true);
 
-      this.npcP1.setPosition(1593, 681);
-      this.npcP2.setPosition(1635, 681);
-
-      forcarDirecao(this.npcP1, 'npc1', 'right');
-      forcarDirecao(this.npcP2, 'npc2', 'left');
+      this.npcP2.setPosition(1593, 681);
+      this.npcP1.setPosition(1635, 681);
 
       this.playerEla.setPosition(2934, 336);
       this.playerEle.setPosition(3046, 399);
