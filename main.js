@@ -152,6 +152,14 @@ new Phaser.Game(config);
 // --- 3. FUNÇÕES PRINCIPAIS ---
 
 function preload() {
+  this.load.audio('musica_final', 'assets/musica.mp3');
+ for (let i = 1; i <= 25; i++) {
+    this.load.image(`foto${i}`, `assets/fotos/foto${i}.jpg`);
+}
+
+  
+  // ... e assim por diante
+
   this.load.image('tiles', 'assets/tiles.png');
   this.load.tilemapTiledJSON('mapa', 'assets/cidade.json');
 
@@ -2641,9 +2649,9 @@ function encontrouSinal() {
     this.cameras.main.fadeOut(600, 0, 0, 0);
     this.time.delayedCall(650, () => {
       this.cameras.main.fadeIn(1, 0, 0, 0);
-        escolaQuartoDia.call(this, 800);
+      escolaQuartoDia.call(this, 800);
     });
-   
+
   });
 }
 
@@ -2679,21 +2687,21 @@ function escolaQuartoDia() {
   mudarCameraDePlayer(this.cameras.main, this.playerEla, this)
 }
 
-function iniciarRecreioPedidodeNamoro(){
+function iniciarRecreioPedidodeNamoro() {
 
   this.cameras.main.fadeOut(600, 0, 0, 0);
-    this.time.delayedCall(650, () => {
-      this.cameras.main.fadeIn(1, 0, 0, 0);
+  this.time.delayedCall(650, () => {
+    this.cameras.main.fadeIn(1, 0, 0, 0);
 
-        gameState.missaoAtual = 'FalarComAlexndrePedidoNamoro';
-        recreioPedidodeNamoro.call(this, 800);
-    });
- 
+    gameState.missaoAtual = 'FalarComAlexndrePedidoNamoro';
+    recreioPedidodeNamoro.call(this, 800);
+  });
+
 }
 
-function recreioPedidodeNamoro(){
+function recreioPedidodeNamoro() {
 
-  
+
   this.playerEle.setVisible(true);
   this.playerEla.body.moves = true;
 
@@ -2703,7 +2711,7 @@ function recreioPedidodeNamoro(){
   pararPersonagens.call(this);
 
   this.playerEla.setPosition(2929, 343);
-  this.playerEle.setPosition(2800, 364);
+  this.playerEle.setPosition(2800, 394);
 
   mudarParaNoite(this, 0);
 
@@ -2736,133 +2744,348 @@ function recreioPedidodeNamoro(){
       duration: 700,
       onComplete: () => {
         overlay.destroy();
-        atualizarMarcadorMissao.call(this); 
+        atualizarMarcadorMissao.call(this);
       }
     });
   });
 
 }
 
-function pedidoDeNamoro(){
+function pedidoDeNamoro() {
   gameState.missaoAtual = null;
-  olharUmParaOutro.call(this, getPersonagemAtivo(this), getNpc(this));
-  this.playerEla.setPosition(2848, 368);
-  this.playerEle.setPosition(2800, 368);
+  //olharUmParaOutro.call(this, getPersonagemAtivo(this), getNpc(this));
   forcarDirecao(this.playerEle, 'ele', 'right');
   forcarDirecao(this.playerEla, 'ela', 'left');
+
   pararPersonagens.call(this);
   gameState.dialogoAtivo = true;
+  this.playerEla.setPosition(2848, 394);
+  this.playerEle.setPosition(2800, 394);
 
   iniciarDialogo.call(this, [
-   { nome: 'Alexandre', texto: 'Ana, vou ser direto. Eu estou gostando muito de você...' },
-{ nome: 'Alexandre', texto: 'Desde o primeiro dia em que a gente saiu para ir no Paulo, eu não consigo mais tirar você da minha cabeça...' },
-{ nome: 'Ana', texto: 'Ai ai… Huum? O que você quer dizer?' },
-{ nome: 'Alexandre', texto: 'Eu queria te pedir em namoro ❤️' },
-{ nome: 'Ana', texto: 'Como assim, Alexandre? 😮 A gente se conhece há tão pouco tempo...' },
-{ nome: 'Ana', texto: 'Além do mais, eu vou embora para São Paulo no final do ano. Como a gente vai namorar assim?' },
-{ nome: 'Alexandre', texto: 'Se for preciso, eu vou para São Paulo também. Eu não me importo.' },
-{ nome: 'Alexandre', texto: 'Uma coisa você precisa saber de mim: eu não faço nada sem pensar. E estou falando com toda certeza que eu quero muito ficar com você.' },
-{ nome: 'Ana', texto: 'Acho que precisamos de mais um tempo para conversar sobre isso. Agora não é um bom momento 😐' },
-{ nome: 'Alexandre', texto: 'Eu não vou desistir de você, a menos que você diga que realmente não quer e que não sentiu nada diferente por mim também.' },
-{ nome: 'Ana', texto: 'Menino, você é doido. A gente não pode namorar assim, do dia para a noite.' },
-{ nome: 'Alexandre', texto: 'Por que não? Eu gosto muito de você. Eu não curto essa ideia de só ficar com alguém...' },
-{nome: 'Alexandre', texto: 'Ainda mais agora que fiquei sabendo que você vai para São Paulo. É uma oportunidade de demonstrar o que sinto por você...' },
-{ nome: 'Alexandre', texto: 'Se você sentir o mesmo e realmente precisar ir, eu vou com você. Falo sério.' },
-{ nome: 'Ana', texto: 'Não achei que era isso que você queria conversar comigo.' },
-{ nome: 'Ana', texto: 'Não sei nem o que te responder agora. Posso pensar um pouco?' },
-{ nome: 'Alexandre', texto: 'Eu queria uma resposta sua agora… vai que você pensa demais e desiste, rsrs.' },
-{ nome: 'Ana', texto: 'E quem disse que eu estou cogitando?' },
-{ nome: 'Alexandre', texto: 'Porque você ainda não disse que não aceita.' },
-{ nome: 'Ana', texto: 'É que eu ainda nem consegui entender direito o que está acontecendo 😮.' },
-{ nome: 'Alexandre', texto: 'Mas e aí? Aceita namorar comigo?' },
-{ nome: 'Ana', texto: 'Tá… tá bom, eu aceito.' },
-{ nome: 'Alexandre', texto: 'Assim eu não quero. Não quero que você se sinta pressionada.' },
-{ nome: 'Ana', texto: 'Não te entendo. Primeiro você fala que quer, agora fala que não quer me pressionar.' },
-{ nome: 'Alexandre', texto: 'Quero que você saiba que estou falando de verdade. Gosto muito de você, mas quero uma resposta verdadeira sua.' },
-{ nome: 'Ana', texto: 'Tá, estou falando sério também. Eu aceito namorar com você, só acho que é muito cedo e que minha mãe vai pirar. Ela nem te conheceu ainda.' },
-{ nome: 'Alexandre', texto: 'Isso a gente resolve. E, por ser cedo, o que importa é se estamos felizes com isso 💕.' },
-{ nome: 'Ana', texto: 'Tá ok 😊 Menino doido.' },
-{ nome: 'Alexandre', texto: '😍' },
-{ nome: 'Ana', texto: 'Vamos voltar para a sala, que a aula já vai começar.' },
-{ nome: 'Alexandre', texto: 'Vamos.' },
+    { nome: 'Alexandre', texto: 'Ana, vou ser direto. Eu estou gostando muito de você...' },
+    { nome: 'Alexandre', texto: 'Desde o primeiro dia em que a gente saiu para ir no Paulo, eu não consigo mais tirar você da minha cabeça...' },
+    { nome: 'Ana', texto: 'Ai ai… Huum? O que você quer dizer?' },
+    { nome: 'Alexandre', texto: 'Eu queria te pedir em namoro ❤️' },
+    { nome: 'Ana', texto: 'Como assim, Alexandre? 😮 A gente se conhece há tão pouco tempo...' },
+    { nome: 'Ana', texto: 'Além do mais, eu vou embora para São Paulo no final do ano. Como a gente vai namorar assim?' },
+    { nome: 'Alexandre', texto: 'Se for preciso, eu vou para São Paulo também. Eu não me importo.' },
+    { nome: 'Alexandre', texto: 'Uma coisa você precisa saber de mim: eu não faço nada sem pensar. E estou falando com toda certeza que eu quero muito ficar com você.' },
+    { nome: 'Ana', texto: 'Acho que precisamos de mais um tempo para conversar sobre isso. Agora não é um bom momento 😐' },
+    { nome: 'Alexandre', texto: 'Eu não vou desistir de você, a menos que você diga que realmente não quer e que não sentiu nada diferente por mim também.' },
+    { nome: 'Ana', texto: 'Menino, você é doido. A gente não pode namorar assim, do dia para a noite.' },
+    { nome: 'Alexandre', texto: 'Por que não? Eu gosto muito de você. Eu não curto essa ideia de só ficar com alguém...' },
+    { nome: 'Alexandre', texto: 'Ainda mais agora que fiquei sabendo que você vai para São Paulo. É uma oportunidade de demonstrar o que sinto por você...' },
+    { nome: 'Alexandre', texto: 'Se você sentir o mesmo e realmente precisar ir, eu vou com você. Falo sério.' },
+    { nome: 'Ana', texto: 'Não achei que era isso que você queria conversar comigo.' },
+    { nome: 'Ana', texto: 'Não sei nem o que te responder agora. Posso pensar um pouco?' },
+    { nome: 'Alexandre', texto: 'Eu queria uma resposta sua agora… vai que você pensa demais e desiste, rsrs.' },
+    { nome: 'Ana', texto: 'E quem disse que eu estou cogitando?' },
+    { nome: 'Alexandre', texto: 'Porque você ainda não disse que não aceita.' },
+    { nome: 'Ana', texto: 'É que eu ainda nem consegui entender direito o que está acontecendo 😮.' },
+    { nome: 'Alexandre', texto: 'Mas e aí? Aceita namorar comigo?' },
+    { nome: 'Ana', texto: 'Tá… tá bom, eu aceito.' },
+    { nome: 'Alexandre', texto: 'Assim eu não quero. Não quero que você se sinta pressionada.' },
+    { nome: 'Ana', texto: 'Não te entendo. Primeiro você fala que quer, agora fala que não quer me pressionar.' },
+    { nome: 'Alexandre', texto: 'Quero que você saiba que estou falando de verdade. Gosto muito de você, mas quero uma resposta verdadeira sua.' },
+    { nome: 'Ana', texto: 'Tá, estou falando sério também. Eu aceito namorar com você, só acho que é muito cedo e que minha mãe vai pirar. Ela nem te conheceu ainda.' },
+    { nome: 'Alexandre', texto: 'Isso a gente resolve. E, por ser cedo, o que importa é se estamos felizes com isso 💕.' },
+    { nome: 'Ana', texto: 'Tá ok 😊 Menino doido.' },
+    { nome: 'Alexandre', texto: '😍' },
+    { nome: 'Ana', texto: 'Vamos voltar para a sala, que a aula já vai começar.' },
+    { nome: 'Alexandre', texto: 'Vamos.' },
 
   ], () => {
 
-     olharUmParaOutro.call(this, getNpc(this), getPersonagemAtivo(this));
-  gameState.dialogoAtivo = true;
-  // 1. Faz os dois se aproximarem (um passo à frente)
-  this.tweens.add({
-    targets: this.playerEle,
-    x: this.playerEla.x + 18, // Ajusta para ficarem bem próximos
-    duration: 1000,
-    ease: 'Power1'
-  });
+    olharUmParaOutro.call(this, getNpc(this), getPersonagemAtivo(this));
+    this.playerEla.setPosition(2848, 394);
+    this.playerEle.setPosition(2800, 394);
+    gameState.dialogoAtivo = true;
+    // 1. Faz os dois se aproximarem (um passo à frente)
+    this.tweens.add({
+      targets: this.playerEle,
+      x: this.playerEla.x - 10, // Ajusta para ficarem bem próximos
+      duration: 1000,
+      ease: 'Power1'
+    });
 
-  this.tweens.add({
-    targets: this.playerEla,
-    x: this.playerEla.x + 5, // Pequeno ajuste de posição
-    duration: 1000,
-    ease: 'Power1',
-    onComplete: () => {
-      // 2. Cria o coração acima deles quando se tocam
-      const coracao = this.add.text(
-        (this.playerEle.x + this.playerEla.x) / 2,
-        this.playerEla.y - 40,
-        '❤️',
-        { fontSize: '40px' }
-      ).setOrigin(0.5).setDepth(10000);
+    this.tweens.add({
+      targets: this.playerEla,
+      x: this.playerEla.x + 5, // Pequeno ajuste de posição
+      duration: 1000,
+      ease: 'Power1',
+      onComplete: () => {
+        // 2. Cria o coração acima deles quando se tocam
+        const coracao = this.add.text(
+          (this.playerEle.x + this.playerEla.x) / 2,
+          this.playerEla.y - 40,
+          '❤️',
+          { fontSize: '40px' }
+        ).setOrigin(0.5).setDepth(10000);
 
-      // 3. Efeito de Pulsar (Coração batendo)
-      this.tweens.add({
-        targets: coracao,
-        scale: 1.5,       // Aumenta o tamanho
-        duration: 400,    // Velocidade da batida
-        yoyo: true,       // Volta ao tamanho original
-        repeat: 5,        // Quantas vezes vai pulsar
-        onComplete: () => {
-          // 4. Finaliza a cena e segue para a próxima missão
-          this.tweens.add({
-            targets: coracao,
-            alpha: 0,
-            duration: 500,
-            onComplete: () => {
-              coracao.destroy();
-              gameState.love += 30;
-              atualizarHud.call(this);
-              this.playerEle.body.moves = true;
-              this.playerEla.body.moves = true;
-              gameState.missaoAtual = null;
-              gameState.subMissao = null;
-
-              iniciarDialogo.call(this, [
-                { nome: 'Ana', texto: 'Tchau, boa noite.' },
-              ], () => {
-
-                gameState.dialogoAtivo = false;
-                this.playerEle.body.moves = false;
-                gameState.love += 3;
+        // 3. Efeito de Pulsar (Coração batendo)
+        this.tweens.add({
+          targets: coracao,
+          scale: 1.5,       // Aumenta o tamanho
+          duration: 400,    // Velocidade da batida
+          yoyo: true,       // Volta ao tamanho original
+          repeat: 5,        // Quantas vezes vai pulsar
+          onComplete: () => {
+            // 4. Finaliza a cena e segue para a próxima missão
+            this.tweens.add({
+              targets: coracao,
+              alpha: 0,
+              duration: 500,
+              onComplete: () => {
+                coracao.destroy();
+                gameState.love += 30;
                 atualizarHud.call(this);
-                mudarCameraDePlayer(this.cameras.main, this.playerEla, this);
-                iniciarDialogo.call(this, [
-                  { nome: 'Celular📱', texto: '💌 Nova mensagem de Alexandre: ""Boa noite, dorme com Deus meu amor ❤️"" ' },
-                ], () => {});
+                this.playerEle.body.moves = true;
+                this.playerEla.body.moves = true;
+                gameState.missaoAtual = null;
+                gameState.subMissao = null;
+                this.cameras.main.fadeOut(600, 0, 0, 0);
+                this.time.delayedCall(650, () => {
+                  this.cameras.main.fadeIn(1, 0, 0, 0);
+                  mudarParaDia(this, 0)
+                  iniciarCenaFinal.call(this);
+                  gameState.missaoAtual = null;
+                });
 
-              });
-
-            }
-          });
-        }
-      });
-    }
+              }
+            });
+          }
+        });
+      }
+    });
   });
-
-
-
-
-  });
-  
-
 }
+
+
+/**
+ * Cena Final: Narrativa -> Galeria de Fotos -> Encerramento
+ * Requer: 
+ * - Um arquivo de áudio carregado com a chave 'musica_final'
+ * - Fotos carregadas com as chaves 'foto1', 'foto2', etc.
+ */
+
+function iniciarCenaFinalaa() {
+    const scene = this;
+    const centroX = scene.cameras.main.centerX;
+    const centroY = scene.cameras.main.centerY;
+
+    // Limpeza de eventos anteriores
+    scene.input.keyboard.off('keydown-SPACE');
+
+    // Tentar tocar música com verificação
+    try {
+        if (scene.cache.audio.exists('musica_final')) {
+            scene.sound.play('musica_final', { loop: true, volume: 0.5 });
+        } else {
+            console.warn("Aviso: Áudio 'musica_final' não encontrado no cache.");
+        }
+    } catch (e) {
+        console.error("Erro ao tocar música:", e);
+    }
+
+    // Overlay e Texto Inicial
+    const overlay = scene.add.rectangle(0, 0, scene.scale.width, scene.scale.height, 0x000000)
+        .setOrigin(0).setDepth(9000).setAlpha(1);
+
+    const textoNarrativo = "Entre um pedido e outro, eles conversavam sem pressa...\n(Pressione ESPAÇO para ver as fotos)";
+    const textoPrincipal = scene.add.text(centroX, centroY, textoNarrativo, {
+        fontSize: '22px', color: '#ffffff', align: 'center', wordWrap: { width: 800 }
+    }).setOrigin(0.5).setDepth(9100);
+
+    // Gerenciamento de Fotos
+    const chavesFotos = ['foto1', 'foto2'];
+    let indice = 0;
+    let imagemAtual = null;
+    let fase = 'texto'; // 'texto' -> 'fotos' -> 'fim'
+
+    const proximoPasso = () => {
+        if (fase === 'texto') {
+            textoPrincipal.destroy();
+            fase = 'fotos';
+            mostrarFoto();
+        } else if (fase === 'fotos') {
+            mostrarFoto();
+        }
+    };
+
+    const mostrarFoto = () => {
+        // Remover foto anterior
+        if (imagemAtual) imagemAtual.destroy();
+
+        // Verificar se ainda há fotos e se a chave existe no cache
+        if (indice < chavesFotos.length) {
+            const chave = chavesFotos[indice];
+            
+            if (scene.textures.exists(chave)) {
+                imagemAtual = scene.add.image(centroX, centroY, chave).setOrigin(0.5).setDepth(9200);
+                
+                // Redimensionamento automático
+                const escala = Math.min(scene.scale.width / imagemAtual.width, scene.scale.height / imagemAtual.height) * 0.8;
+                imagemAtual.setScale(escala);
+                
+                indice++;
+            } else {
+                console.warn(`Foto '${chave}' não encontrada. Pulando...`);
+                indice++;
+                mostrarFoto(); // Tenta a próxima
+            }
+        } else {
+            fase = 'fim';
+            exibirFinal();
+        }
+    };
+
+    const exibirFinal = () => {
+        scene.input.keyboard.off('keydown-SPACE');
+        if (imagemAtual) imagemAtual.destroy();
+        
+        scene.add.text(centroX, centroY, 'Felizes para sempre... ❤️', {
+            fontSize: '48px', color: '#ffffff', fontStyle: 'bold'
+        }).setOrigin(0.5).setDepth(9300);
+    };
+
+    scene.input.keyboard.on('keydown-SPACE', proximoPasso);
+}
+
+
+/**
+ * CENA FINAL - VERSÃO VISIBILIDADE CORRIGIDA
+ * Resolve o problema do fundo preto cobrindo o texto e as fotos.
+ */
+
+
+/**
+ * CENA FINAL - VERSÃO À PROVA DE FALHAS
+ * Esta versão garante que o texto e as fotos apareçam na frente de TUDO,
+ * ignorando a posição da câmera e do mapa.
+ */
+
+function iniciarCenaFinal() {
+    const scene = this;
+    
+    // 1. Coordenadas da TELA (não do mapa)
+    const larguraTela = scene.scale.width;
+    const alturaTela = scene.scale.height;
+    const centroX = larguraTela / 2;
+    const centroY = alturaTela / 2;
+
+    // 2. Limpeza total de eventos de teclado
+    scene.input.keyboard.removeAllListeners('keydown-SPACE');
+
+    // 3. Música
+    if (scene.cache.audio.exists('musica_final')) {
+        scene.sound.stopAll();
+        scene.sound.play('musica_final', { loop: true, volume: 0.5 });
+    }
+
+    // 4. FUNDO PRETO ABSOLUTO
+    // Usamos setScrollFactor(0) para ele "colar" na tela e Depth altíssimo
+    const overlay = scene.add.rectangle(0, 0, larguraTela, alturaTela, 0x000000)
+        .setOrigin(0)
+        .setScrollFactor(0)
+        .setDepth(100000)
+        .setAlpha(1);
+
+    // 5. TEXTO NARRATIVO
+   const textoNarrativo = `E foi assim que tudo começou:
+de uma amizade repentina, daquelas que chegam sem avisar,
+e que, em pouco tempo, se transformam em algo impossível de ignorar.
+
+Sem saber que seria para a vida toda, seguiram em frente,
+na coragem, na loucura e no coração aberto.
+Casaram sem planos, sem certezas,
+mas cheios de sonhos que aprenderam a construir dia após dia.
+
+Não foi um conto de fadas.
+Não como eles imaginaram que seria.
+Houve imaturidade, houve brigas,
+e caminhos trilhados que não deveriam ter sido.
+
+Ainda assim, nem os piores momentos conseguiram separar
+um amor que, sem dúvida, foi unido por Deus.
+E mesmo depois de tantos anos,
+continuaram tentando — na alegria e na tristeza,
+na saude e na doença, escolhendo um ao outro todos os dias. Até ficarem Velhinhos 💞
+
+Clique no espaço para pular`;;
+    const textoPrincipal = scene.add.text(centroX, centroY, textoNarrativo, {
+        fontSize: '32px',
+        color: '#ffffff',
+        align: 'center',
+        fontStyle: 'bold',
+        wordWrap: { width: larguraTela - 100 }
+    })
+    .setOrigin(0.5)
+    .setScrollFactor(0)
+    .setDepth(100001);
+
+    // --- Lógica de Fotos ---
+    // Tente carregar as fotos com estes nomes no seu preload
+   const chavesFotos = Array.from({ length: 25 }, (_, i) => `foto${i + 1}`);
+    let indice = 0;
+    let imagemAtual = null;
+    let estado = 'texto';
+
+    const avancar = () => {
+        console.log("Espaço pressionado! Estado atual:", estado);
+        
+        if (estado === 'texto') {
+            textoPrincipal.destroy();
+            estado = 'fotos';
+            mostrarFoto();
+        } else if (estado === 'fotos') {
+            mostrarFoto();
+        }
+    };
+
+    const mostrarFoto = () => {
+        if (imagemAtual) imagemAtual.destroy();
+
+        if (indice < chavesFotos.length) {
+            const chave = chavesFotos[indice];
+            
+            if (scene.textures.exists(chave)) {
+                imagemAtual = scene.add.image(centroX, centroY, chave)
+                    .setOrigin(0.5)
+                    .setScrollFactor(0)
+                    .setDepth(100002);
+                
+                // Ajuste de escala para caber na tela
+                const scale = Math.min(larguraTela / imagemAtual.width, alturaTela / imagemAtual.height) * 0.8;
+                imagemAtual.setScale(scale);
+                
+                indice++;
+            } else {
+                console.warn("Foto não encontrada no cache:", chave);
+                indice++;
+                mostrarFoto(); // Tenta a próxima se esta falhar
+            }
+        } else {
+            // FIM: Texto Final
+            estado = 'fim';
+            scene.add.text(centroX, centroY, 'Alexandre S2 Ana Paula - 2026 ❤️', {
+                fontSize: '64px',
+                color: '#ffffff',
+                fontStyle: 'bold'
+            })
+            .setOrigin(0.5)
+            .setScrollFactor(0)
+            .setDepth(100003);
+            
+            scene.input.keyboard.removeAllListeners('keydown-SPACE');
+        }
+    };
+
+    // Ativar o teclado
+    scene.input.keyboard.on('keydown-SPACE', avancar);
+}
+
+
 
 function iniciarJornadaNPC(npc, tipoAnimacao, cena) {
   // Posições de destino
