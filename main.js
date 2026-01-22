@@ -333,7 +333,7 @@ function update() {
 
   // 2. Definir o tipo do NPC para as animações
   const tipoNpc = gameState.personagemAtual === 'ela' ? 'ele' : 'ela';
-  const speed = 120;
+  const speed = 190;
 
   if (gameState.dialogoAtivo) return;
 
@@ -344,7 +344,7 @@ function update() {
     const distancia = Phaser.Math.Distance.Between(npc.x, npc.y, player.x, player.y);
 
     if (distancia > 30) {
-      this.physics.moveToObject(npc, player, 110);
+      this.physics.moveToObject(npc, player, 180);
 
       const dx = player.x - npc.x;
       const dy = player.y - npc.y;
