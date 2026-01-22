@@ -197,7 +197,7 @@ function create() {
   // 1. Atalhos de Desenvolvimento
   this.input.keyboard.on('keydown-ONE', () => iniciarMissaoSala.call(this));
   this.input.keyboard.on('keydown-TWO', () => pularParaConversa.call(this));
-  this.input.keyboard.on('keydown-THREE', () => iniciarRecreioPedidodeNamoro.call(this));
+  this.input.keyboard.on('keydown-THREE', () => conversarSegundaEscola.call(this));
   this.input.keyboard.on('keydown-FOUR', () => pularParaCasa.call(this));
   this.input.keyboard.on('keydown-FIVE', () => pularescola.call(this));
   this.input.keyboard.on('keydown-SIX', () => enviarMensagemAlexandre.call(this));
@@ -215,7 +215,7 @@ function create() {
   this.cameras.main.setBackgroundColor('#84C669');
 
   // 5. Inicialização dos Jogadores
-  this.playerEla = this.physics.add.sprite(1488, 496, 'playerEla', FRAMES.ela.idle);
+  this.playerEla = this.physics.add.sprite(276, 1808, 'playerEla', FRAMES.ela.idle);
   this.playerEle = this.physics.add.sprite(2982, 580, 'playerEle', FRAMES.ele.idle);
 
   // 5. Inicialização dos npc
@@ -333,7 +333,7 @@ function update() {
 
   // 2. Definir o tipo do NPC para as animações
   const tipoNpc = gameState.personagemAtual === 'ela' ? 'ele' : 'ela';
-  const speed = 420;
+  const speed = 120;
 
   if (gameState.dialogoAtivo) return;
 
@@ -862,7 +862,7 @@ function ambosNaSala() {
   this.time.delayedCall(650, () => {
     this.cameras.main.fadeIn(1, 0, 0, 0);
     mostrarRelogioAnimado.call(this);
-    mudarParaNoite(this, 2000);
+    mudarParaNoite(this, 1000);
   });
 }
 
@@ -1375,7 +1375,7 @@ function enviarMensagem(texto, remetente) {
 
 function segundoDia() {
 
-  mudarParaDia(this, 3000);
+  mudarParaDia(this, 1000);
 
   this.playerEle.body.moves = true;
   mudarCameraDePlayer(this.cameras.main, this.playerEla, this);
@@ -1941,6 +1941,8 @@ function chegaranNaSala() {
   gameState.missaoAtual = null;
 
   this.time.delayedCall(500, () => {
+
+    mudarParaNoite(this, 2000);
 
     atualizarMarcadorMissao.call(this);
     this.cameras.main.fadeOut(600, 0, 0, 0);
@@ -2649,6 +2651,7 @@ function encontrouSinal() {
     this.cameras.main.fadeOut(600, 0, 0, 0);
     this.time.delayedCall(650, () => {
       this.cameras.main.fadeIn(1, 0, 0, 0);
+      mudarParaDia(this, 1000);
       escolaQuartoDia.call(this, 800);
     });
 
@@ -2744,6 +2747,7 @@ function recreioPedidodeNamoro() {
       duration: 700,
       onComplete: () => {
         overlay.destroy();
+        mostrarObjetivo.call(this, "O Alexandre esta te esperando para conversar.", 4000);
         atualizarMarcadorMissao.call(this);
       }
     });
@@ -2984,7 +2988,6 @@ function iniciarCenaFinal() {
     }
 
     // 4. FUNDO PRETO ABSOLUTO
-    // Usamos setScrollFactor(0) para ele "colar" na tela e Depth altíssimo
     const overlay = scene.add.rectangle(0, 0, larguraTela, alturaTela, 0x000000)
         .setOrigin(0)
         .setScrollFactor(0)
@@ -2992,7 +2995,7 @@ function iniciarCenaFinal() {
         .setAlpha(1);
 
     // 5. TEXTO NARRATIVO
-   const textoNarrativo = `E foi assim que tudo começou:
+    const textoNarrativo = `E foi assim que tudo começou:
 de uma amizade repentina, daquelas que chegam sem avisar,
 e que, em pouco tempo, se transformam em algo impossível de ignorar.
 
@@ -3012,9 +3015,10 @@ E mesmo depois de tantos anos,
 continuaram tentando — na alegria e na tristeza,
 na saude e na doença, escolhendo um ao outro todos os dias. Até ficarem Velhinhos 💞
 
-Clique no espaço para pular`;;
+Pressione ESPAÇO para ver alguns momentos dessa jornada.`;
+
     const textoPrincipal = scene.add.text(centroX, centroY, textoNarrativo, {
-        fontSize: '32px',
+        fontSize: '28px',
         color: '#ffffff',
         align: 'center',
         fontStyle: 'bold',
@@ -3025,11 +3029,10 @@ Clique no espaço para pular`;;
     .setDepth(100001);
 
     // --- Lógica de Fotos ---
-    // Tente carregar as fotos com estes nomes no seu preload
-   const chavesFotos = Array.from({ length: 25 }, (_, i) => `foto${i + 1}`);
+    const chavesFotos = Array.from({ length: 25 }, (_, i) => `foto${i + 1}`);
     let indice = 0;
     let imagemAtual = null;
-    let estado = 'texto';
+    let estado = 'texto'; // 'texto' -> 'fotos' -> 'fim' -> 'reiniciar'
 
     const avancar = () => {
         console.log("Espaço pressionado! Estado atual:", estado);
@@ -3040,6 +3043,10 @@ Clique no espaço para pular`;;
             mostrarFoto();
         } else if (estado === 'fotos') {
             mostrarFoto();
+        } else if (estado === 'reiniciar') {
+            // REINICIAR O JOGO COMPLETAMENTE
+            scene.sound.stopAll();
+            window.location.reload();
         }
     };
 
@@ -3055,7 +3062,6 @@ Clique no espaço para pular`;;
                     .setScrollFactor(0)
                     .setDepth(100002);
                 
-                // Ajuste de escala para caber na tela
                 const scale = Math.min(larguraTela / imagemAtual.width, alturaTela / imagemAtual.height) * 0.8;
                 imagemAtual.setScale(scale);
                 
@@ -3063,28 +3069,42 @@ Clique no espaço para pular`;;
             } else {
                 console.warn("Foto não encontrada no cache:", chave);
                 indice++;
-                mostrarFoto(); // Tenta a próxima se esta falhar
+                mostrarFoto(); 
             }
         } else {
             // FIM: Texto Final
             estado = 'fim';
-            scene.add.text(centroX, centroY, 'Alexandre S2 Ana Paula - 2026 ❤️', {
-                fontSize: '64px',
+            if (imagemAtual) imagemAtual.destroy();
+
+            scene.add.text(centroX, centroY - 40, 'Alexandre S2 Ana Paula - 2026 ❤️', {
+                fontSize: '52px',
                 color: '#ffffff',
                 fontStyle: 'bold'
             })
             .setOrigin(0.5)
             .setScrollFactor(0)
             .setDepth(100003);
+
+            // Instrução para reiniciar
+            scene.add.text(centroX, centroY + 80, 'Pressione ESPAÇO para voltar ao início', {
+                fontSize: '24px',
+                color: '#ffd166',
+                fontStyle: 'bold'
+            })
+            .setOrigin(0.5)
+            .setScrollFactor(0)
+            .setDepth(100003);
             
-            scene.input.keyboard.removeAllListeners('keydown-SPACE');
+            // Pequeno atraso para evitar que o clique da última foto reinicie direto
+            setTimeout(() => {
+                estado = 'reiniciar';
+            }, 1000);
         }
     };
 
     // Ativar o teclado
     scene.input.keyboard.on('keydown-SPACE', avancar);
 }
-
 
 
 function iniciarJornadaNPC(npc, tipoAnimacao, cena) {
