@@ -71,7 +71,7 @@ class TelaInicial extends Phaser.Scene {
 
 const config = {
   type: Phaser.AUTO,
-  width: 1200,
+  width: 1480,
   height: 720,
   pixelArt: true,
   scale: {
