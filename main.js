@@ -262,7 +262,7 @@ function preload() {
 
 function create() {
 
-  this.filtroNoite = this.add.rectangle(0, 0, 1200, 720, 0x000033)
+  this.filtroNoite = this.add.rectangle(0, 0, 1480, 720, 0x000033)
     .setOrigin(0)
     .setScrollFactor(0)
     .setDepth(50000) // Certifique-se que o depth é alto para ficar por cima de tudo
