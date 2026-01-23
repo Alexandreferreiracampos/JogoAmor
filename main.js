@@ -230,7 +230,6 @@ function preload() {
     this.load.image(`foto${i}`, `assets/fotos/foto${i}.jpg`);
   }
 
-
   // ... e assim por diante
 
   this.load.image('tiles', 'assets/tiles.png');
@@ -378,9 +377,11 @@ function create() {
 
     fundoBtn.on('pointerdown', () => {
       if (!this.scale.isFullscreen) {
-        this.scale.startFullscreen();
+        //this.scale.startFullscreen();
+        
+  pedidoDeNamoro.call(this);
       } else {
-        this.scale.stopFullscreen();
+        //this.scale.stopFullscreen();
       }
     });
 
@@ -2425,10 +2426,20 @@ Foi rápido, mas suficiente para transformar aquele encontro em algo inesquecív
     .setScrollFactor(0)
     .setDepth(9201);
 
-  // 3. Crie a função que vai fechar a tela
+    this.input.on('pointerdown', () => {
+    fecharTela();
+  });
+
+// 🔒 trava contra múltiplas execuções
+  let telaFechada = false;
+
   const fecharTela = () => {
-    // Remove o evento de teclado para não disparar duas vezes
+    if (telaFechada) return;
+    telaFechada = true;
+
+    // remove só os eventos dessa tela
     this.input.keyboard.off('keydown-SPACE', fecharTela);
+    overlay.off('pointerdown', fecharTela);
     olharUmParaOutro.call(this, getNpc(this), getPersonagemAtivo(this));
     gameState.dialogoAtivo = true;
 
@@ -2542,8 +2553,9 @@ Foi rápido, mas suficiente para transformar aquele encontro em algo inesquecív
     });
   };
 
-  // 4. Ativa o escutador de teclado
-  this.input.keyboard.on('keydown-SPACE', fecharTela);
+  // eventos únicos
+  overlay.once('pointerdown', fecharTela);
+  this.input.keyboard.once('keydown-SPACE', fecharTela);
 
 }
 
@@ -3086,29 +3098,30 @@ function iniciarCenaFinalaa() {
 function iniciarCenaFinal() {
   const scene = this;
 
-  // 1. Coordenadas da TELA (não do mapa)
   const larguraTela = scene.scale.width;
   const alturaTela = scene.scale.height;
   const centroX = larguraTela / 2;
   const centroY = alturaTela / 2;
 
-  // 2. Limpeza total de eventos de teclado
+  let bloqueado = false; // ✅ AGORA EXISTE
+  let imagemAtual = null;
+  let indice = 0;
+  let estado = 'texto';
+
   scene.input.keyboard.removeAllListeners('keydown-SPACE');
 
-  // 3. Música
   if (scene.cache.audio.exists('musica_final')) {
     scene.sound.stopAll();
     scene.sound.play('musica_final', { loop: true, volume: 0.5 });
   }
 
-  // 4. FUNDO PRETO ABSOLUTO
   const overlay = scene.add.rectangle(0, 0, larguraTela, alturaTela, 0x000000)
     .setOrigin(0)
     .setScrollFactor(0)
     .setDepth(100000)
-    .setAlpha(1);
+    .setInteractive();
 
-  // 5. TEXTO NARRATIVO
+    // 5. TEXTO NARRATIVO
   const textoNarrativo = `E foi assim que tudo começou:
 de uma amizade repentina, daquelas que chegam sem avisar,
 e que, em pouco tempo, se transformam em algo impossível de ignorar.
@@ -3142,27 +3155,23 @@ Pressione ESPAÇO para ver alguns momentos dessa jornada.`;
     .setScrollFactor(0)
     .setDepth(100001);
 
-  // --- Lógica de Fotos ---
   const chavesFotos = Array.from({ length: 25 }, (_, i) => `foto${i + 1}`);
-  let indice = 0;
-  let imagemAtual = null;
-  let estado = 'texto'; // 'texto' -> 'fotos' -> 'fim' -> 'reiniciar'
-
-  this.input.on('pointerdown', () => {
-    avancar();
-  });
 
   const avancar = () => {
-    console.log("Espaço pressionado! Estado atual:", estado);
+    if (bloqueado) return;
+
+    bloqueado = true;
+    scene.time.delayedCall(300, () => bloqueado = false);
 
     if (estado === 'texto') {
       textoPrincipal.destroy();
       estado = 'fotos';
       mostrarFoto();
-    } else if (estado === 'fotos') {
+    } 
+    else if (estado === 'fotos') {
       mostrarFoto();
-    } else if (estado === 'reiniciar') {
-      // REINICIAR O JOGO COMPLETAMENTE
+    } 
+    else if (estado === 'reiniciar') {
       scene.sound.stopAll();
       window.location.reload();
     }
@@ -3185,12 +3194,10 @@ Pressione ESPAÇO para ver alguns momentos dessa jornada.`;
 
         indice++;
       } else {
-        console.warn("Foto não encontrada no cache:", chave);
         indice++;
         mostrarFoto();
       }
     } else {
-      // FIM: Texto Final
       estado = 'fim';
       if (imagemAtual) imagemAtual.destroy();
 
@@ -3198,31 +3205,25 @@ Pressione ESPAÇO para ver alguns momentos dessa jornada.`;
         fontSize: '52px',
         color: '#ffffff',
         fontStyle: 'bold'
-      })
-        .setOrigin(0.5)
-        .setScrollFactor(0)
-        .setDepth(100003);
+      }).setOrigin(0.5).setScrollFactor(0).setDepth(100003);
 
-      // Instrução para reiniciar
       scene.add.text(centroX, centroY + 80, 'Pressione ESPAÇO para voltar ao início', {
         fontSize: '24px',
         color: '#ffd166',
         fontStyle: 'bold'
-      })
-        .setOrigin(0.5)
-        .setScrollFactor(0)
-        .setDepth(100003);
+      }).setOrigin(0.5).setScrollFactor(0).setDepth(100003);
 
-      // Pequeno atraso para evitar que o clique da última foto reinicie direto
-      setTimeout(() => {
+      // ✅ AGORA USANDO O RELÓGIO DO PHASER
+      scene.time.delayedCall(1000, () => {
         estado = 'reiniciar';
-      }, 1000);
+      });
     }
   };
 
-  // Ativar o teclado
+  overlay.on('pointerdown', avancar);
   scene.input.keyboard.on('keydown-SPACE', avancar);
 }
+
 
 
 function iniciarJornadaNPC(npc, tipoAnimacao, cena) {
