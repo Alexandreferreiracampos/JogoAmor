@@ -377,11 +377,10 @@ function create() {
 
     fundoBtn.on('pointerdown', () => {
       if (!this.scale.isFullscreen) {
-        //this.scale.startFullscreen();
-        
-  pedidoDeNamoro.call(this);
+        this.scale.startFullscreen();
+   
       } else {
-        //this.scale.stopFullscreen();
+        this.scale.stopFullscreen();
       }
     });
 
