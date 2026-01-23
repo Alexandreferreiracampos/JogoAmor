@@ -77,7 +77,7 @@ const config = {
   scale: {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
-     orientation: Phaser.Scale.Orientation.LANDSCAPE
+    orientation: Phaser.Scale.Orientation.LANDSCAPE
   },
   physics: {
     default: 'arcade',
@@ -158,10 +158,10 @@ const gameState = {
   sinalAtivo: false,
   temMensagemPendente: false,
   love: 0,
-
+  modoLandScape: false,
   encontroAtivado: false,
   jogoFinalizado: false, // Nova flag para evitar loops no fim
-    controlesMoveis: { up: false, down: false, left: false, right: false, action: false }
+  controlesMoveis: { up: false, down: false, left: false, right: false, action: false }
 };
 
 new Phaser.Game(config);
@@ -177,36 +177,36 @@ function criarControlesMoveis() {
 
   // Criamos o grupo
   this.controlesGroup = this.add.container(0, 0).setDepth(50000).setScrollFactor(0);
-  
+
   const criarBotao = (x, y, label, direcao) => {
     const btn = this.add.rectangle(x, y, tamanho, tamanho, 0x000000, 0.5)
       .setScrollFactor(0)
       .setDepth(20000)
       .setInteractive();
-    
+
     const txt = this.add.text(x, y, label, { fontSize: '32px', color: '#ffffff' })
       .setOrigin(0.5)
       .setScrollFactor(0)
       .setDepth(20001);
 
     // --- ESSA É A PARTE QUE FALTAVA: ---
-    this.controlesGroup.add([btn, txt]); 
+    this.controlesGroup.add([btn, txt]);
     // -----------------------------------
 
-    btn.on('pointerdown', () => { 
+    btn.on('pointerdown', () => {
       if (direcao === 'action') {
         if (gameState.dialogoAtivo) avancarDialogo.call(this);
       } else {
-        gameState.controlesMoveis[direcao] = true; 
+        gameState.controlesMoveis[direcao] = true;
       }
       btn.setFillStyle(0xffffff, 0.5);
     });
-    btn.on('pointerup', () => { 
-      if (direcao !== 'action') gameState.controlesMoveis[direcao] = false; 
+    btn.on('pointerup', () => {
+      if (direcao !== 'action') gameState.controlesMoveis[direcao] = false;
       btn.setFillStyle(0x000000, 0.5);
     });
-    btn.on('pointerout', () => { 
-      if (direcao !== 'action') gameState.controlesMoveis[direcao] = false; 
+    btn.on('pointerout', () => {
+      if (direcao !== 'action') gameState.controlesMoveis[direcao] = false;
       btn.setFillStyle(0x000000, 0.5);
     });
   };
@@ -214,21 +214,23 @@ function criarControlesMoveis() {
   criarBotao(80, height - margem - tamanho * 1.5, '◀', 'left');
   criarBotao(285, height - margem - tamanho * 1.5, '▶', 'right');
   criarBotao(80 + tamanho + 5, height - margem - tamanho * 2.5 - 10, '▲', 'up');
-  criarBotao(80 + tamanho + 5, height - margem - tamanho/2, '▼', 'down');
-  
+  criarBotao(80 + tamanho + 5, height - margem - tamanho / 2, '▼', 'down');
+
   this.input.on('pointerdown', () => {
     if (gameState.dialogoAtivo) avancarDialogo.call(this);
   });
+
+  
 }
 
 
 function preload() {
-  //this.load.audio('musica_final', 'assets/musica.mp3');
- for (let i = 1; i <= 25; i++) {
+  this.load.audio('musica_final', 'assets/musica.mp3');
+  for (let i = 1; i <= 25; i++) {
     this.load.image(`foto${i}`, `assets/fotos/foto${i}.jpg`);
-}
+  }
 
-  
+
   // ... e assim por diante
 
   this.load.image('tiles', 'assets/tiles.png');
@@ -310,6 +312,7 @@ function create() {
 
   criarAnimacoes(this);
 
+
   // 6. Controles e Câmera
   cursors = this.input.keyboard.createCursorKeys();
   this.cameras.main.startFollow(this.playerEla);
@@ -357,35 +360,35 @@ function create() {
 
   const criarBotaoFullScreen = () => {
     const { width } = this.scale;
-    
+
     // Criamos um fundo preto para o botão ficar bem visível
     const fundoBtn = this.add.rectangle(width - 50, 100, 60, 60, 0x000000, 0.7)
-        .setScrollFactor(0)
-        .setDepth(200000) // Depth altíssimo para ficar acima de tudo
-        .setInteractive({ useHandCursor: true });
+      .setScrollFactor(0)
+      .setDepth(200000) // Depth altíssimo para ficar acima de tudo
+      .setInteractive({ useHandCursor: true });
 
     // O ícone de tela cheia
-    const textoBtn = this.add.text(width - 50, 100, '⛶', { 
-        fontSize: '40px', 
-        color: '#ffffff' 
+    const textoBtn = this.add.text(width - 50, 100, '⛶', {
+      fontSize: '40px',
+      color: '#ffffff'
     })
-    .setOrigin(0.5)
-    .setScrollFactor(0)
-    .setDepth(200001);
+      .setOrigin(0.5)
+      .setScrollFactor(0)
+      .setDepth(200001);
 
     fundoBtn.on('pointerdown', () => {
-        if (!this.scale.isFullscreen) {
-            this.scale.startFullscreen();
-        } else {
-            this.scale.stopFullscreen();
-        }
+      if (!this.scale.isFullscreen) {
+        this.scale.startFullscreen();
+      } else {
+        this.scale.stopFullscreen();
+      }
     });
 
-};
+  };
 
-// Chama a função para criar o botão
-criarBotaoFullScreen();
-
+  // Chama a função para criar o botão
+  criarBotaoFullScreen();
+  
 }
 
 function inicializarTextoObjetivo(scene) {
@@ -423,10 +426,17 @@ function mostrarObjetivo(mensagem, duracao = 3000) {
   });
 }
 
+function isMobileDevice() {
+  return /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
+}
+
 
 function update() {
   // Atualizar Status de Sinal (Sempre rodar para checar o menu)
   atualizarStatusSinal(this);
+
+ 
+
 
   if (gameState.dialogoAtivo) return;
 
@@ -2978,86 +2988,86 @@ function pedidoDeNamoro() {
  */
 
 function iniciarCenaFinalaa() {
-    const scene = this;
-    const centroX = scene.cameras.main.centerX;
-    const centroY = scene.cameras.main.centerY;
+  const scene = this;
+  const centroX = scene.cameras.main.centerX;
+  const centroY = scene.cameras.main.centerY;
 
-    // Limpeza de eventos anteriores
-    scene.input.keyboard.off('keydown-SPACE');
+  // Limpeza de eventos anteriores
+  scene.input.keyboard.off('keydown-SPACE');
 
-    // Tentar tocar música com verificação
-    try {
-        if (scene.cache.audio.exists('musica_final')) {
-            scene.sound.play('musica_final', { loop: true, volume: 0.5 });
-        } else {
-            console.warn("Aviso: Áudio 'musica_final' não encontrado no cache.");
-        }
-    } catch (e) {
-        console.error("Erro ao tocar música:", e);
+  // Tentar tocar música com verificação
+  try {
+    if (scene.cache.audio.exists('musica_final')) {
+      scene.sound.play('musica_final', { loop: true, volume: 0.5 });
+    } else {
+      console.warn("Aviso: Áudio 'musica_final' não encontrado no cache.");
     }
+  } catch (e) {
+    console.error("Erro ao tocar música:", e);
+  }
 
-    // Overlay e Texto Inicial
-    const overlay = scene.add.rectangle(0, 0, scene.scale.width, scene.scale.height, 0x000000)
-        .setOrigin(0).setDepth(9000).setAlpha(1);
+  // Overlay e Texto Inicial
+  const overlay = scene.add.rectangle(0, 0, scene.scale.width, scene.scale.height, 0x000000)
+    .setOrigin(0).setDepth(9000).setAlpha(1);
 
-    const textoNarrativo = "Entre um pedido e outro, eles conversavam sem pressa...\n(Pressione ESPAÇO para ver as fotos)";
-    const textoPrincipal = scene.add.text(centroX, centroY, textoNarrativo, {
-        fontSize: '22px', color: '#ffffff', align: 'center', wordWrap: { width: 800 }
-    }).setOrigin(0.5).setDepth(9100);
+  const textoNarrativo = "Entre um pedido e outro, eles conversavam sem pressa...\n(Pressione ESPAÇO para ver as fotos)";
+  const textoPrincipal = scene.add.text(centroX, centroY, textoNarrativo, {
+    fontSize: '22px', color: '#ffffff', align: 'center', wordWrap: { width: 800 }
+  }).setOrigin(0.5).setDepth(9100);
 
-    // Gerenciamento de Fotos
-    const chavesFotos = ['foto1', 'foto2'];
-    let indice = 0;
-    let imagemAtual = null;
-    let fase = 'texto'; // 'texto' -> 'fotos' -> 'fim'
+  // Gerenciamento de Fotos
+  const chavesFotos = ['foto1', 'foto2'];
+  let indice = 0;
+  let imagemAtual = null;
+  let fase = 'texto'; // 'texto' -> 'fotos' -> 'fim'
 
-    const proximoPasso = () => {
-        if (fase === 'texto') {
-            textoPrincipal.destroy();
-            fase = 'fotos';
-            mostrarFoto();
-        } else if (fase === 'fotos') {
-            mostrarFoto();
-        }
-    };
+  const proximoPasso = () => {
+    if (fase === 'texto') {
+      textoPrincipal.destroy();
+      fase = 'fotos';
+      mostrarFoto();
+    } else if (fase === 'fotos') {
+      mostrarFoto();
+    }
+  };
 
-    const mostrarFoto = () => {
-        // Remover foto anterior
-        if (imagemAtual) imagemAtual.destroy();
+  const mostrarFoto = () => {
+    // Remover foto anterior
+    if (imagemAtual) imagemAtual.destroy();
 
-        // Verificar se ainda há fotos e se a chave existe no cache
-        if (indice < chavesFotos.length) {
-            const chave = chavesFotos[indice];
-            
-            if (scene.textures.exists(chave)) {
-                imagemAtual = scene.add.image(centroX, centroY, chave).setOrigin(0.5).setDepth(9200);
-                
-                // Redimensionamento automático
-                const escala = Math.min(scene.scale.width / imagemAtual.width, scene.scale.height / imagemAtual.height) * 0.8;
-                imagemAtual.setScale(escala);
-                
-                indice++;
-            } else {
-                console.warn(`Foto '${chave}' não encontrada. Pulando...`);
-                indice++;
-                mostrarFoto(); // Tenta a próxima
-            }
-        } else {
-            fase = 'fim';
-            exibirFinal();
-        }
-    };
+    // Verificar se ainda há fotos e se a chave existe no cache
+    if (indice < chavesFotos.length) {
+      const chave = chavesFotos[indice];
 
-    const exibirFinal = () => {
-        scene.input.keyboard.off('keydown-SPACE');
-        if (imagemAtual) imagemAtual.destroy();
-        
-        scene.add.text(centroX, centroY, 'Felizes para sempre... ❤️', {
-            fontSize: '48px', color: '#ffffff', fontStyle: 'bold'
-        }).setOrigin(0.5).setDepth(9300);
-    };
+      if (scene.textures.exists(chave)) {
+        imagemAtual = scene.add.image(centroX, centroY, chave).setOrigin(0.5).setDepth(9200);
 
-    scene.input.keyboard.on('keydown-SPACE', proximoPasso);
+        // Redimensionamento automático
+        const escala = Math.min(scene.scale.width / imagemAtual.width, scene.scale.height / imagemAtual.height) * 0.8;
+        imagemAtual.setScale(escala);
+
+        indice++;
+      } else {
+        console.warn(`Foto '${chave}' não encontrada. Pulando...`);
+        indice++;
+        mostrarFoto(); // Tenta a próxima
+      }
+    } else {
+      fase = 'fim';
+      exibirFinal();
+    }
+  };
+
+  const exibirFinal = () => {
+    scene.input.keyboard.off('keydown-SPACE');
+    if (imagemAtual) imagemAtual.destroy();
+
+    scene.add.text(centroX, centroY, 'Felizes para sempre... ❤️', {
+      fontSize: '48px', color: '#ffffff', fontStyle: 'bold'
+    }).setOrigin(0.5).setDepth(9300);
+  };
+
+  scene.input.keyboard.on('keydown-SPACE', proximoPasso);
 }
 
 
@@ -3074,32 +3084,32 @@ function iniciarCenaFinalaa() {
  */
 
 function iniciarCenaFinal() {
-    const scene = this;
-    
-    // 1. Coordenadas da TELA (não do mapa)
-    const larguraTela = scene.scale.width;
-    const alturaTela = scene.scale.height;
-    const centroX = larguraTela / 2;
-    const centroY = alturaTela / 2;
+  const scene = this;
 
-    // 2. Limpeza total de eventos de teclado
-    scene.input.keyboard.removeAllListeners('keydown-SPACE');
+  // 1. Coordenadas da TELA (não do mapa)
+  const larguraTela = scene.scale.width;
+  const alturaTela = scene.scale.height;
+  const centroX = larguraTela / 2;
+  const centroY = alturaTela / 2;
 
-    // 3. Música
-    if (scene.cache.audio.exists('musica_final')) {
-        scene.sound.stopAll();
-        scene.sound.play('musica_final', { loop: true, volume: 0.5 });
-    }
+  // 2. Limpeza total de eventos de teclado
+  scene.input.keyboard.removeAllListeners('keydown-SPACE');
 
-    // 4. FUNDO PRETO ABSOLUTO
-    const overlay = scene.add.rectangle(0, 0, larguraTela, alturaTela, 0x000000)
-        .setOrigin(0)
-        .setScrollFactor(0)
-        .setDepth(100000)
-        .setAlpha(1);
+  // 3. Música
+  if (scene.cache.audio.exists('musica_final')) {
+    scene.sound.stopAll();
+    scene.sound.play('musica_final', { loop: true, volume: 0.5 });
+  }
 
-    // 5. TEXTO NARRATIVO
-    const textoNarrativo = `E foi assim que tudo começou:
+  // 4. FUNDO PRETO ABSOLUTO
+  const overlay = scene.add.rectangle(0, 0, larguraTela, alturaTela, 0x000000)
+    .setOrigin(0)
+    .setScrollFactor(0)
+    .setDepth(100000)
+    .setAlpha(1);
+
+  // 5. TEXTO NARRATIVO
+  const textoNarrativo = `E foi assim que tudo começou:
 de uma amizade repentina, daquelas que chegam sem avisar,
 e que, em pouco tempo, se transformam em algo impossível de ignorar.
 
@@ -3121,93 +3131,97 @@ na saude e na doença, escolhendo um ao outro todos os dias. Até ficarem Velhin
 
 Pressione ESPAÇO para ver alguns momentos dessa jornada.`;
 
-    const textoPrincipal = scene.add.text(centroX, centroY, textoNarrativo, {
-        fontSize: '28px',
-        color: '#ffffff',
-        align: 'center',
-        fontStyle: 'bold',
-        wordWrap: { width: larguraTela - 100 }
-    })
+  const textoPrincipal = scene.add.text(centroX, centroY, textoNarrativo, {
+    fontSize: '28px',
+    color: '#ffffff',
+    align: 'center',
+    fontStyle: 'bold',
+    wordWrap: { width: larguraTela - 100 }
+  })
     .setOrigin(0.5)
     .setScrollFactor(0)
     .setDepth(100001);
 
-    // --- Lógica de Fotos ---
-    const chavesFotos = Array.from({ length: 25 }, (_, i) => `foto${i + 1}`);
-    let indice = 0;
-    let imagemAtual = null;
-    let estado = 'texto'; // 'texto' -> 'fotos' -> 'fim' -> 'reiniciar'
+  // --- Lógica de Fotos ---
+  const chavesFotos = Array.from({ length: 25 }, (_, i) => `foto${i + 1}`);
+  let indice = 0;
+  let imagemAtual = null;
+  let estado = 'texto'; // 'texto' -> 'fotos' -> 'fim' -> 'reiniciar'
 
-    const avancar = () => {
-        console.log("Espaço pressionado! Estado atual:", estado);
-        
-        if (estado === 'texto') {
-            textoPrincipal.destroy();
-            estado = 'fotos';
-            mostrarFoto();
-        } else if (estado === 'fotos') {
-            mostrarFoto();
-        } else if (estado === 'reiniciar') {
-            // REINICIAR O JOGO COMPLETAMENTE
-            scene.sound.stopAll();
-            window.location.reload();
-        }
-    };
+  this.input.on('pointerdown', () => {
+    avancar();
+  });
 
-    const mostrarFoto = () => {
-        if (imagemAtual) imagemAtual.destroy();
+  const avancar = () => {
+    console.log("Espaço pressionado! Estado atual:", estado);
 
-        if (indice < chavesFotos.length) {
-            const chave = chavesFotos[indice];
-            
-            if (scene.textures.exists(chave)) {
-                imagemAtual = scene.add.image(centroX, centroY, chave)
-                    .setOrigin(0.5)
-                    .setScrollFactor(0)
-                    .setDepth(100002);
-                
-                const scale = Math.min(larguraTela / imagemAtual.width, alturaTela / imagemAtual.height) * 0.8;
-                imagemAtual.setScale(scale);
-                
-                indice++;
-            } else {
-                console.warn("Foto não encontrada no cache:", chave);
-                indice++;
-                mostrarFoto(); 
-            }
-        } else {
-            // FIM: Texto Final
-            estado = 'fim';
-            if (imagemAtual) imagemAtual.destroy();
+    if (estado === 'texto') {
+      textoPrincipal.destroy();
+      estado = 'fotos';
+      mostrarFoto();
+    } else if (estado === 'fotos') {
+      mostrarFoto();
+    } else if (estado === 'reiniciar') {
+      // REINICIAR O JOGO COMPLETAMENTE
+      scene.sound.stopAll();
+      window.location.reload();
+    }
+  };
 
-            scene.add.text(centroX, centroY - 40, 'Alexandre S2 Ana Paula - 2026 ❤️', {
-                fontSize: '52px',
-                color: '#ffffff',
-                fontStyle: 'bold'
-            })
-            .setOrigin(0.5)
-            .setScrollFactor(0)
-            .setDepth(100003);
+  const mostrarFoto = () => {
+    if (imagemAtual) imagemAtual.destroy();
 
-            // Instrução para reiniciar
-            scene.add.text(centroX, centroY + 80, 'Pressione ESPAÇO para voltar ao início', {
-                fontSize: '24px',
-                color: '#ffd166',
-                fontStyle: 'bold'
-            })
-            .setOrigin(0.5)
-            .setScrollFactor(0)
-            .setDepth(100003);
-            
-            // Pequeno atraso para evitar que o clique da última foto reinicie direto
-            setTimeout(() => {
-                estado = 'reiniciar';
-            }, 1000);
-        }
-    };
+    if (indice < chavesFotos.length) {
+      const chave = chavesFotos[indice];
 
-    // Ativar o teclado
-    scene.input.keyboard.on('keydown-SPACE', avancar);
+      if (scene.textures.exists(chave)) {
+        imagemAtual = scene.add.image(centroX, centroY, chave)
+          .setOrigin(0.5)
+          .setScrollFactor(0)
+          .setDepth(100002);
+
+        const scale = Math.min(larguraTela / imagemAtual.width, alturaTela / imagemAtual.height) * 0.8;
+        imagemAtual.setScale(scale);
+
+        indice++;
+      } else {
+        console.warn("Foto não encontrada no cache:", chave);
+        indice++;
+        mostrarFoto();
+      }
+    } else {
+      // FIM: Texto Final
+      estado = 'fim';
+      if (imagemAtual) imagemAtual.destroy();
+
+      scene.add.text(centroX, centroY - 40, 'Alexandre S2 Ana Paula - 2026 ❤️', {
+        fontSize: '52px',
+        color: '#ffffff',
+        fontStyle: 'bold'
+      })
+        .setOrigin(0.5)
+        .setScrollFactor(0)
+        .setDepth(100003);
+
+      // Instrução para reiniciar
+      scene.add.text(centroX, centroY + 80, 'Pressione ESPAÇO para voltar ao início', {
+        fontSize: '24px',
+        color: '#ffd166',
+        fontStyle: 'bold'
+      })
+        .setOrigin(0.5)
+        .setScrollFactor(0)
+        .setDepth(100003);
+
+      // Pequeno atraso para evitar que o clique da última foto reinicie direto
+      setTimeout(() => {
+        estado = 'reiniciar';
+      }, 1000);
+    }
+  };
+
+  // Ativar o teclado
+  scene.input.keyboard.on('keydown-SPACE', avancar);
 }
 
 
