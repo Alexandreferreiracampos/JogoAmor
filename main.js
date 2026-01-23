@@ -5,13 +5,14 @@ class TelaInicial extends Phaser.Scene {
   }
 
   preload() {
-    // Carregamento de assets se necessário
+    // Você pode carregar uma imagem de fundo aqui se quiser
+    // this.load.image('fundoInicio', 'assets/fundo_inicio.png');
   }
 
   create() {
     const { width, height } = this.scale;
 
-    // Frase principal
+    // 1. Frase principal
     this.add.text(width / 2, height / 4, 'Foi aqui, onde tudo começou ❤️', {
       fontSize: '42px',
       fontStyle: 'bold',
@@ -19,6 +20,7 @@ class TelaInicial extends Phaser.Scene {
       fontFamily: 'monospace'
     }).setOrigin(0.5);
 
+    // 2. Subtítulo
     this.add.text(width / 2, height / 2 - 50, 'Posto Norte - 2012', {
       fontSize: '42px',
       fontStyle: 'bold',
@@ -26,7 +28,7 @@ class TelaInicial extends Phaser.Scene {
       fontFamily: 'monospace'
     }).setOrigin(0.5);
 
-    // Botão Iniciar História
+    // 3. Botão Iniciar História
     const botao = this.add.text(width / 2, height / 2 + 50, 'Iniciar', {
       fontSize: '32px',
       color: '#ffd166',
@@ -37,29 +39,35 @@ class TelaInicial extends Phaser.Scene {
       .setOrigin(0.5)
       .setInteractive({ useHandCursor: true });
 
-    // Efeito de hover
+    // Efeito de hover (passar o mouse)
     botao.on('pointerover', () => botao.setStyle({ color: '#ffffff' }));
     botao.on('pointerout', () => botao.setStyle({ color: '#ffd166' }));
 
-    // --- ÚNICO EVENTO DE CLIQUE ---
+    // --- AÇÃO DE CLIQUE OTIMIZADA ---
     botao.on('pointerdown', () => {
-      // 1. Tenta ativar Tela Cheia
+      // PASSO 1: Solicitar Tela Cheia IMEDIATAMENTE (prioridade máxima do navegador)
       if (!this.scale.isFullscreen) {
         this.scale.startFullscreen();
       }
 
-      // 2. Tenta travar a orientação em Paisagem (Landscape)
+      // PASSO 2: Tentar travar a orientação em Paisagem (Landscape)
+      // Isso funciona melhor quando disparado junto com o Fullscreen
       if (screen.orientation && screen.orientation.lock) {
         screen.orientation.lock('landscape').catch(err => {
-          console.log("Trava de orientação não suportada ou bloqueada.");
+          console.log("A trava de orientação não é suportada ou foi ignorada.");
         });
       }
 
-      // 3. Muda para a cena do jogo
-      this.scene.start('CenaJogo');
+      // PASSO 3: Pequeno atraso (100ms) antes de mudar de cena
+      // Isso garante que o navegador processe a transição para Fullscreen 
+      // antes de começar a carregar o mapa pesado da CenaJogo.
+      this.time.delayedCall(100, () => {
+        this.scene.start('CenaJogo');
+      });
     });
   }
 }
+
 
 const config = {
   type: Phaser.AUTO,
