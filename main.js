@@ -49,6 +49,16 @@ class TelaInicial extends Phaser.Scene {
     botao.on('pointerdown', () => {
       this.scene.start('CenaJogo');
     });
+
+    botao.on('pointerdown', () => {
+  // 1. Ativa a tela cheia
+  if (!this.scale.isFullscreen) {
+    this.scale.startFullscreen();
+  }
+
+  // 2. Muda para a cena do jogo
+  this.scene.start('CenaJogo');
+});
   }
 }
 
@@ -143,7 +153,8 @@ const gameState = {
   love: 0,
 
   encontroAtivado: false,
-  jogoFinalizado: false // Nova flag para evitar loops no fim
+  jogoFinalizado: false, // Nova flag para evitar loops no fim
+    controlesMoveis: { up: false, down: false, left: false, right: false, action: false }
 };
 
 new Phaser.Game(config);
@@ -151,8 +162,61 @@ new Phaser.Game(config);
 
 // --- 3. FUNÇÕES PRINCIPAIS ---
 
+
+function criarControlesMoveis() {
+  const { width, height } = this.scale;
+  const tamanho = 100;
+  const margem = 50;
+
+  // Criamos o grupo
+  this.controlesGroup = this.add.container(0, 0).setDepth(50000).setScrollFactor(0);
+  
+  const criarBotao = (x, y, label, direcao) => {
+    const btn = this.add.rectangle(x, y, tamanho, tamanho, 0x000000, 0.5)
+      .setScrollFactor(0)
+      .setDepth(20000)
+      .setInteractive();
+    
+    const txt = this.add.text(x, y, label, { fontSize: '32px', color: '#ffffff' })
+      .setOrigin(0.5)
+      .setScrollFactor(0)
+      .setDepth(20001);
+
+    // --- ESSA É A PARTE QUE FALTAVA: ---
+    this.controlesGroup.add([btn, txt]); 
+    // -----------------------------------
+
+    btn.on('pointerdown', () => { 
+      if (direcao === 'action') {
+        if (gameState.dialogoAtivo) avancarDialogo.call(this);
+      } else {
+        gameState.controlesMoveis[direcao] = true; 
+      }
+      btn.setFillStyle(0xffffff, 0.5);
+    });
+    btn.on('pointerup', () => { 
+      if (direcao !== 'action') gameState.controlesMoveis[direcao] = false; 
+      btn.setFillStyle(0x000000, 0.5);
+    });
+    btn.on('pointerout', () => { 
+      if (direcao !== 'action') gameState.controlesMoveis[direcao] = false; 
+      btn.setFillStyle(0x000000, 0.5);
+    });
+  };
+
+  criarBotao(80, height - margem - tamanho * 1.5, '◀', 'left');
+  criarBotao(285, height - margem - tamanho * 1.5, '▶', 'right');
+  criarBotao(80 + tamanho + 5, height - margem - tamanho * 2.5 - 10, '▲', 'up');
+  criarBotao(80 + tamanho + 5, height - margem - tamanho/2, '▼', 'down');
+  
+  this.input.on('pointerdown', () => {
+    if (gameState.dialogoAtivo) avancarDialogo.call(this);
+  });
+}
+
+
 function preload() {
-  this.load.audio('musica_final', 'assets/musica.mp3');
+  //this.load.audio('musica_final', 'assets/musica.mp3');
  for (let i = 1; i <= 25; i++) {
     this.load.image(`foto${i}`, `assets/fotos/foto${i}.jpg`);
 }
@@ -192,7 +256,7 @@ function create() {
   this.filtroNoite = this.add.rectangle(0, 0, 1200, 720, 0x000033)
     .setOrigin(0)
     .setScrollFactor(0)
-    .setDepth(5000) // Certifique-se que o depth é alto para ficar por cima de tudo
+    .setDepth(50000) // Certifique-se que o depth é alto para ficar por cima de tudo
     .setAlpha(0);
   // 1. Atalhos de Desenvolvimento
   this.input.keyboard.on('keydown-ONE', () => iniciarMissaoSala.call(this));
@@ -281,7 +345,39 @@ function create() {
   atualizarMarcadorMissao.call(this);
 
   inicializarTextoObjetivo(this);
+  criarControlesMoveis.call(this);
   mostrarObjetivo.call(this, "Vá até a escola", 4000);
+
+  const criarBotaoFullScreen = () => {
+    const { width } = this.scale;
+    
+    // Criamos um fundo preto para o botão ficar bem visível
+    const fundoBtn = this.add.rectangle(width - 50, 100, 60, 60, 0x000000, 0.7)
+        .setScrollFactor(0)
+        .setDepth(200000) // Depth altíssimo para ficar acima de tudo
+        .setInteractive({ useHandCursor: true });
+
+    // O ícone de tela cheia
+    const textoBtn = this.add.text(width - 50, 100, '⛶', { 
+        fontSize: '40px', 
+        color: '#ffffff' 
+    })
+    .setOrigin(0.5)
+    .setScrollFactor(0)
+    .setDepth(200001);
+
+    fundoBtn.on('pointerdown', () => {
+        if (!this.scale.isFullscreen) {
+            this.scale.startFullscreen();
+        } else {
+            this.scale.stopFullscreen();
+        }
+    });
+
+};
+
+// Chama a função para criar o botão
+criarBotaoFullScreen();
 
 }
 
@@ -372,19 +468,19 @@ function update() {
   // 4. Movimentação do Jogador Ativo
   player.setVelocity(0);
 
-  if (cursors.left.isDown) {
+  if (cursors.left.isDown || gameState.controlesMoveis.left) {
     player.setVelocityX(-speed);
     player.anims.play(`${gameState.personagemAtual}-left`, true);
     player.direction = 'left';
-  } else if (cursors.right.isDown) {
+  } else if (cursors.right.isDown || gameState.controlesMoveis.right) {
     player.setVelocityX(speed);
     player.anims.play(`${gameState.personagemAtual}-right`, true);
     player.direction = 'right';
-  } else if (cursors.up.isDown) {
+  } else if (cursors.up.isDown || gameState.controlesMoveis.up) {
     player.setVelocityY(-speed);
     player.anims.play(`${gameState.personagemAtual}-up`, true);
     player.direction = 'up';
-  } else if (cursors.down.isDown) {
+  } else if (cursors.down.isDown || gameState.controlesMoveis.down) {
     player.setVelocityY(speed);
     player.anims.play(`${gameState.personagemAtual}-down`, true);
     player.direction = 'down';
@@ -465,6 +561,7 @@ function iniciarDialogo(falas, aoFinal = null) {
   this.dialogo.bg.setVisible(true);
   this.dialogo.nome.setVisible(true);
   this.dialogo.texto.setVisible(true);
+  if (this.controlesGroup) this.controlesGroup.setVisible(false);
 
   exibirFala.call(this);
 }
@@ -509,7 +606,7 @@ function finalizarDialogo() {
   this.dialogo.bg.setVisible(false);
   this.dialogo.nome.setVisible(false);
   this.dialogo.texto.setVisible(false);
-
+  if (this.controlesGroup) this.controlesGroup.setVisible(true);
   if (this.dialogo.aoFinal) {
     const callback = this.dialogo.aoFinal;
     this.dialogo.aoFinal = null;
