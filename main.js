@@ -1,22 +1,18 @@
 
-// --- 1. CONFIGURAÇÕES E CONSTANTES ---
-
-// --- CENA DE INÍCIO ---
 class TelaInicial extends Phaser.Scene {
   constructor() {
     super({ key: 'TelaInicial' });
   }
 
   preload() {
-    // Você pode carregar uma imagem de fundo aqui se quiser
-    // this.load.image('fundoInicio', 'assets/fundo_inicio.png');
+    // Carregamento de assets se necessário
   }
 
   create() {
     const { width, height } = this.scale;
 
     // Frase principal
-    this.add.text(width / 1.9, height / 4 - 50, 'Foi aqui, onde tudo começou ❤️', {
+    this.add.text(width / 2, height / 4, 'Foi aqui, onde tudo começou ❤️', {
       fontSize: '42px',
       fontStyle: 'bold',
       color: '#ffffff',
@@ -41,27 +37,29 @@ class TelaInicial extends Phaser.Scene {
       .setOrigin(0.5)
       .setInteractive({ useHandCursor: true });
 
-    // Efeito de hover (passar o mouse)
+    // Efeito de hover
     botao.on('pointerover', () => botao.setStyle({ color: '#ffffff' }));
     botao.on('pointerout', () => botao.setStyle({ color: '#ffd166' }));
 
-    // Ação de clicar: Muda para a cena principal do jogo
+    // --- ÚNICO EVENTO DE CLIQUE ---
     botao.on('pointerdown', () => {
+      // 1. Tenta ativar Tela Cheia
+      if (!this.scale.isFullscreen) {
+        this.scale.startFullscreen();
+      }
+
+      // 2. Tenta travar a orientação em Paisagem (Landscape)
+      if (screen.orientation && screen.orientation.lock) {
+        screen.orientation.lock('landscape').catch(err => {
+          console.log("Trava de orientação não suportada ou bloqueada.");
+        });
+      }
+
+      // 3. Muda para a cena do jogo
       this.scene.start('CenaJogo');
     });
-
-    botao.on('pointerdown', () => {
-  // 1. Ativa a tela cheia
-  if (!this.scale.isFullscreen) {
-    this.scale.startFullscreen();
-  }
-
-  // 2. Muda para a cena do jogo
-  this.scene.start('CenaJogo');
-});
   }
 }
-
 
 const config = {
   type: Phaser.AUTO,
@@ -70,7 +68,8 @@ const config = {
   pixelArt: true,
   scale: {
     mode: Phaser.Scale.FIT,
-    autoCenter: Phaser.Scale.CENTER_BOTH
+    autoCenter: Phaser.Scale.CENTER_BOTH,
+     orientation: Phaser.Scale.Orientation.LANDSCAPE
   },
   physics: {
     default: 'arcade',
