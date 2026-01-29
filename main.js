@@ -330,6 +330,22 @@ function preload() {
 
   const { width, height } = this.scale;
 
+  const textoAmor = this.add.text(width, height - 80, 
+  "Nunca esquece de que eu te amo muito ❤️", 
+{
+  fontSize: '28px',
+  fill: '#ffffff',
+  fontFamily: 'monospace'
+});
+
+this.tweens.add({
+  targets: textoAmor,
+  x: -textoAmor.width, // vai até sair pela esquerda
+  duration: 4000,      // tempo pra atravessar a tela
+  ease: 'Linear',
+  repeat: -1           // loop infinito enquanto carrega
+});
+
   // Texto "Carregando..."
   const texto = this.add.text(width / 2, height / 2 - 40, 'Carregando...', {
     fontSize: '28px',
