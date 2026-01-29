@@ -368,6 +368,7 @@ this.tweens.add({
     texto.destroy();
     barraFundo.destroy();
     barraProgresso.destroy();
+    textoAmor.destroy();
   });
 
 
