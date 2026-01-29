@@ -4,15 +4,12 @@ class TelaInicial extends Phaser.Scene {
     super({ key: 'TelaInicial' });
   }
 
-  preload() {
-    // Você pode carregar uma imagem de fundo aqui se quiser
-    // this.load.image('fundoInicio', 'assets/fundo_inicio.png');
-  }
-
   create() {
     const { width, height } = this.scale;
 
-    // 1. Frase principal
+    // =============================
+    // TEXTOS
+    // =============================
     this.add.text(width / 2, height / 4, 'Foi aqui, onde tudo começou ❤️', {
       fontSize: '42px',
       fontStyle: 'bold',
@@ -20,7 +17,6 @@ class TelaInicial extends Phaser.Scene {
       fontFamily: 'monospace'
     }).setOrigin(0.5);
 
-    // 2. Subtítulo
     this.add.text(width / 2, height / 2 - 50, 'Posto Norte - 2012', {
       fontSize: '42px',
       fontStyle: 'bold',
@@ -28,8 +24,10 @@ class TelaInicial extends Phaser.Scene {
       fontFamily: 'monospace'
     }).setOrigin(0.5);
 
-    // 3. Botão Iniciar História
-    const botao = this.add.text(width / 2, height / 2 + 50, 'Iniciar', {
+    // =============================
+    // BOTÃO INICIAR (agora é da cena)
+    // =============================
+    this.botaoIniciar = this.add.text(width / 2, height / 2 + 50, 'Iniciar', {
       fontSize: '32px',
       color: '#ffd166',
       backgroundColor: '#000000',
@@ -39,34 +37,124 @@ class TelaInicial extends Phaser.Scene {
       .setOrigin(0.5)
       .setInteractive({ useHandCursor: true });
 
-    // Efeito de hover (passar o mouse)
-    botao.on('pointerover', () => botao.setStyle({ color: '#ffffff' }));
-    botao.on('pointerout', () => botao.setStyle({ color: '#ffd166' }));
+    this.botaoIniciar.on('pointerover', () => this.botaoIniciar.setStyle({ color: '#ffffff' }));
+    this.botaoIniciar.on('pointerout', () => this.botaoIniciar.setStyle({ color: '#ffd166' }));
 
-    // --- AÇÃO DE CLIQUE OTIMIZADA ---
-    botao.on('pointerdown', () => {
-      // PASSO 1: Solicitar Tela Cheia IMEDIATAMENTE (prioridade máxima do navegador)
-      if (!this.scale.isFullscreen) {
-        this.scale.startFullscreen();
-      }
+    this.botaoIniciar.on('pointerdown', () => {
+      if (!this.scale.isFullscreen) this.scale.startFullscreen();
 
-      // PASSO 2: Tentar travar a orientação em Paisagem (Landscape)
-      // Isso funciona melhor quando disparado junto com o Fullscreen
       if (screen.orientation && screen.orientation.lock) {
-        screen.orientation.lock('landscape').catch(err => {
-          console.log("A trava de orientação não é suportada ou foi ignorada.");
-        });
+        screen.orientation.lock('landscape').catch(() => { });
       }
 
-      // PASSO 3: Pequeno atraso (100ms) antes de mudar de cena
-      // Isso garante que o navegador processe a transição para Fullscreen 
-      // antes de começar a carregar o mapa pesado da CenaJogo.
       this.time.delayedCall(100, () => {
         this.scene.start('CenaJogo');
       });
     });
+
+    // =============================
+    // BOTÃO MISSÕES
+    // =============================
+    this.btnMissoes = this.add.text(width / 2, height / 2 + 120, '📂 Escolher Missão', {
+      fontSize: '32px',
+      color: '#ffffff',
+      backgroundColor: '#000000',
+      padding: { x: 20, y: 10 },
+      fontFamily: 'monospace'
+    })
+      .setOrigin(0.5)
+      .setInteractive({ useHandCursor: true });
+
+    this.btnMissoes.on('pointerover', () => this.btnMissoes.setStyle({ color: '#ffd166' }));
+    this.btnMissoes.on('pointerout', () => this.btnMissoes.setStyle({ color: '#ffffff' }));
+
+    // =============================
+    // MENU DE MISSÕES
+    // =============================
+    const menuContainer = this.add.container(0, 0).setVisible(false).setDepth(1000);
+
+    const fundoMenu = this.add.rectangle(0, 0, width, height, 0x000000, 0.95)
+      .setOrigin(0)
+      .setInteractive(); // 👈 BLOQUEIA CLIQUES NO FUNDO
+    menuContainer.add(fundoMenu);
+
+    const tituloMenu = this.add.text(width / 2, 80, 'Selecione a Missão', {
+      fontSize: '40px',
+      color: '#ffd166',
+      fontStyle: 'bold',
+      fontFamily: 'monospace'
+    }).setOrigin(0.5);
+    menuContainer.add(tituloMenu);
+
+    const listaMissoes = [
+      { nome: '1. Primeiro Encontro - Pizzaria do Paulo', funcao: 'pizzaPaulo' },
+      { nome: '2. Segundo Encontro - Tereré', funcao: 'missaoterere' },
+      { nome: '3. Terceiro Encontro - Alemão', funcao: 'missaoalemao' },
+      { nome: '4. Levar para Casa (Final)', funcao: 'missaoFinal' }
+    ];
+
+    listaMissoes.forEach((missao, index) => {
+      const botaoMissao = this.add.text(width / 2, 160 + index * 70, missao.nome, {
+        fontSize: '28px',
+        color: '#ffffff',
+        backgroundColor: '#222222',
+        padding: { x: 15, y: 8 },
+        fontFamily: 'monospace'
+      })
+        .setOrigin(0.5)
+        .setInteractive({ useHandCursor: true });
+
+      botaoMissao.on('pointerover', () => botaoMissao.setStyle({ color: '#ffd166' }));
+      botaoMissao.on('pointerout', () => botaoMissao.setStyle({ color: '#ffffff' }));
+
+      botaoMissao.on('pointerdown', () => {
+        if (!this.scale.isFullscreen) this.scale.startFullscreen();
+
+      if (screen.orientation && screen.orientation.lock) {
+        screen.orientation.lock('landscape').catch(() => { });
+      }
+
+      this.time.delayedCall(100, () => {
+        this.scene.start('CenaJogo', { missaoInicial: missao.funcao });
+      });
+        
+      });
+
+      menuContainer.add(botaoMissao);
+    });
+
+    const fecharBtn = this.add.text(width - 40, 30, '✖', {
+      fontSize: '32px',
+      color: '#ff4d4d',
+      fontFamily: 'monospace'
+    })
+      .setOrigin(0.5)
+      .setInteractive({ useHandCursor: true });
+
+    menuContainer.add(fecharBtn);
+
+    // =============================
+    // FUNÇÕES DE ABRIR/FECHAR MENU
+    // =============================
+    const abrirMenu = () => {
+      menuContainer.setVisible(true);
+      this.botaoIniciar.disableInteractive();
+      this.btnMissoes.disableInteractive();
+    };
+
+    const fecharMenu = () => {
+      menuContainer.setVisible(false);
+      this.botaoIniciar.setInteractive({ useHandCursor: true });
+      this.btnMissoes.setInteractive({ useHandCursor: true });
+    };
+
+    this.btnMissoes.on('pointerdown', abrirMenu);
+    fecharBtn.on('pointerdown', fecharMenu);
+    this.input.keyboard.on('keydown-ESC', fecharMenu);
   }
 }
+
+
 
 
 const config = {
@@ -220,7 +308,7 @@ function criarControlesMoveis() {
     if (gameState.dialogoAtivo) avancarDialogo.call(this);
   });
 
-  
+
 }
 
 
@@ -259,7 +347,7 @@ function preload() {
 
 }
 
-function create() {
+function create(data) {
 
   this.filtroNoite = this.add.rectangle(0, 0, 1480, 720, 0x000033)
     .setOrigin(0)
@@ -355,7 +443,11 @@ function create() {
 
   inicializarTextoObjetivo(this);
   criarControlesMoveis.call(this);
-  mostrarObjetivo.call(this, "Vá até a escola", 4000);
+
+  if(Object.keys(data).length === 0){
+    mostrarObjetivo.call(this, "Vá até a escola", 4000);
+  }
+  
 
   const criarBotaoFullScreen = () => {
     const { width } = this.scale;
@@ -378,7 +470,7 @@ function create() {
     fundoBtn.on('pointerdown', () => {
       if (!this.scale.isFullscreen) {
         this.scale.startFullscreen();
-   
+
       } else {
         this.scale.stopFullscreen();
       }
@@ -388,7 +480,15 @@ function create() {
 
   // Chama a função para criar o botão
   criarBotaoFullScreen();
-  
+
+  if (data && data.missaoInicial) {
+    this.time.delayedCall(500, () => {
+      if (typeof window[data.missaoInicial] === 'function') {
+        window[data.missaoInicial].call(this);
+      }
+    });
+  }
+
 }
 
 function inicializarTextoObjetivo(scene) {
@@ -435,7 +535,7 @@ function update() {
   // Atualizar Status de Sinal (Sempre rodar para checar o menu)
   atualizarStatusSinal(this);
 
- 
+
 
 
   if (gameState.dialogoAtivo) return;
@@ -2425,11 +2525,11 @@ Foi rápido, mas suficiente para transformar aquele encontro em algo inesquecív
     .setScrollFactor(0)
     .setDepth(9201);
 
-    this.input.on('pointerdown', () => {
+  this.input.on('pointerdown', () => {
     fecharTela();
   });
 
-// 🔒 trava contra múltiplas execuções
+  // 🔒 trava contra múltiplas execuções
   let telaFechada = false;
 
   const fecharTela = () => {
@@ -3120,7 +3220,7 @@ function iniciarCenaFinal() {
     .setDepth(100000)
     .setInteractive();
 
-    // 5. TEXTO NARRATIVO
+  // 5. TEXTO NARRATIVO
   const textoNarrativo = `E foi assim que tudo começou:
 de uma amizade repentina, daquelas que chegam sem avisar,
 e que, em pouco tempo, se transformam em algo impossível de ignorar.
@@ -3166,10 +3266,10 @@ Pressione ESPAÇO para ver alguns momentos dessa jornada.`;
       textoPrincipal.destroy();
       estado = 'fotos';
       mostrarFoto();
-    } 
+    }
     else if (estado === 'fotos') {
       mostrarFoto();
-    } 
+    }
     else if (estado === 'reiniciar') {
       scene.sound.stopAll();
       window.location.reload();
@@ -3303,22 +3403,57 @@ function enviarMensagemAlexandre() {
   this.playerEla.setPosition(882, 798);
 }
 
-function encontroPracaterere() {
+function pizzaPaulo() {
   gameState.love += 10;
   atualizarHud.call(this);
   gameState.dialogoAtivo = false;
   this.playerEla.body.moves = true;
   this.playerEle.body.moves = true;
-  //mudarParaNoite(this, 2000)
-  this.playerEla.setPosition(1471, 624);
-  this.playerEle.setPosition(1471, 624);
+  mudarParaNoite(this, 0)
+  this.playerEla.setPosition(2952, 731);
+  this.playerEle.setPosition(2943, 462);
+  finalizarAula.call(this);
+  mudarCameraDePlayer(this.cameras.main, this.playerEle, this);
+  atualizarMarcadorMissao.call(this);
+}
+
+function missaoterere() {
+  gameState.love += 20;
+  atualizarHud.call(this);
+  gameState.dialogoAtivo = false;
+  this.playerEla.body.moves = true;
+  this.playerEle.setVisible(false);
+  mudarParaDia(this, 0)
+  gameState.temMensagemPendente = true;
+  segundoDia.call(this);
   mudarCameraDePlayer(this.cameras.main, this.playerEla, this);
-  // gameState.missaoAtual = 'levarParaCasaSegundoEncontro';
-  //mostrarObjetivo.call(this, "Voltar para casa 🏡", 4000);
-  //atualizarMarcadorMissao.call(this);
-  //gameState.missaoAtual = 'irLanchoneteAlemao';
-  gameState.subMissao = 'beijala';
-  mostrarObjetivo.call(this, "Ir até a lanchonete do Alemão", 4000);
+  atualizarMarcadorMissao.call(this);
+}
+
+function missaoalemao() {
+  gameState.love += 50;
+  atualizarHud.call(this);
+  gameState.dialogoAtivo = false;
+  this.playerEla.body.moves = true;
+  this.playerEle.body.moves = true;
+  this.playerEle.setVisible(true);
+  this.playerEla.setVisible(true);
+  mudarParaNoite(this, 0)
+  inicioRecreio.call(this);
+  mudarCameraDePlayer(this.cameras.main, this.playerEla, this);
+  atualizarMarcadorMissao.call(this);
+}
+
+function missaoFinal() {
+  gameState.love += 100;
+  atualizarHud.call(this);
+  gameState.dialogoAtivo = false;
+  this.playerEla.body.moves = true;
+  this.playerEle.body.moves = true;
+  this.playerEle.setVisible(true);
+  this.playerEla.setVisible(true);
+  mudarParaNoite(this, 0)
+  levarParaCasaTerceiroEncontro.call(this);
   atualizarMarcadorMissao.call(this);
 }
 
