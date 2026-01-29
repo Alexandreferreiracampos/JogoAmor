@@ -4,8 +4,24 @@ class TelaInicial extends Phaser.Scene {
     super({ key: 'TelaInicial' });
   }
 
+  preload() {
+    this.load.image('fundoInicio', 'assets/fundo_inicio.png');
+  }
+
   create() {
     const { width, height } = this.scale;
+
+
+
+  // 🖼️ IMAGEM DE FUNDO
+  this.add.image(width / 2, height / 2, 'fundoInicio')
+    .setDisplaySize(width, height)
+    .setDepth(-10); // bem atrás de tudo
+
+      // Camada escura transparente por cima do fundo
+  this.add.rectangle(0, 0, width, height, 0x000000, 0.45)
+    .setOrigin(0)
+    .setDepth(-5);
 
     // =============================
     // TEXTOS
@@ -30,7 +46,6 @@ class TelaInicial extends Phaser.Scene {
     this.botaoIniciar = this.add.text(width / 2, height / 2 + 50, 'Iniciar', {
       fontSize: '32px',
       color: '#ffd166',
-      backgroundColor: '#000000',
       padding: { x: 20, y: 10 },
       fontFamily: 'monospace'
     })
@@ -58,7 +73,6 @@ class TelaInicial extends Phaser.Scene {
     this.btnMissoes = this.add.text(width / 2, height / 2 + 120, '📂 Escolher Missão', {
       fontSize: '32px',
       color: '#ffffff',
-      backgroundColor: '#000000',
       padding: { x: 20, y: 10 },
       fontFamily: 'monospace'
     })
@@ -110,14 +124,14 @@ class TelaInicial extends Phaser.Scene {
       botaoMissao.on('pointerdown', () => {
         if (!this.scale.isFullscreen) this.scale.startFullscreen();
 
-      if (screen.orientation && screen.orientation.lock) {
-        screen.orientation.lock('landscape').catch(() => { });
-      }
+        if (screen.orientation && screen.orientation.lock) {
+          screen.orientation.lock('landscape').catch(() => { });
+        }
 
-      this.time.delayedCall(100, () => {
-        this.scene.start('CenaJogo', { missaoInicial: missao.funcao });
-      });
-        
+        this.time.delayedCall(100, () => {
+          this.scene.start('CenaJogo', { missaoInicial: missao.funcao });
+        });
+
       });
 
       menuContainer.add(botaoMissao);
@@ -313,6 +327,34 @@ function criarControlesMoveis() {
 
 
 function preload() {
+
+  const { width, height } = this.scale;
+
+  // Texto "Carregando..."
+  const texto = this.add.text(width / 2, height / 2 - 40, 'Carregando...', {
+    fontSize: '28px',
+    color: '#ffffff',
+    fontFamily: 'monospace'
+  }).setOrigin(0.5);
+
+  // Barra de fundo
+  const barraFundo = this.add.rectangle(width / 2, height / 2, 400, 25, 0xffffff, 0.2);
+
+  // Barra de progresso
+  const barraProgresso = this.add.rectangle(width / 2 - 200, height / 2, 0, 25, 0xff4d4d)
+    .setOrigin(0, 0.5);
+
+      this.load.on('progress', (value) => {
+    barraProgresso.width = 400 * value;
+  });
+
+    this.load.on('complete', () => {
+    texto.destroy();
+    barraFundo.destroy();
+    barraProgresso.destroy();
+  });
+
+
   this.load.audio('musica_final', 'assets/musica.mp3');
   for (let i = 1; i <= 25; i++) {
     this.load.image(`foto${i}`, `assets/fotos/foto${i}.jpg`);
@@ -444,10 +486,10 @@ function create(data) {
   inicializarTextoObjetivo(this);
   criarControlesMoveis.call(this);
 
-  if(Object.keys(data).length === 0){
+  if (Object.keys(data).length === 0) {
     mostrarObjetivo.call(this, "Vá até a escola", 4000);
   }
-  
+
 
   const criarBotaoFullScreen = () => {
     const { width } = this.scale;
